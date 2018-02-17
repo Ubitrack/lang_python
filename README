@@ -1,0 +1,38 @@
+ubitrack_python - A python wrapper for UbiTrack using boost.python
+
+Author: Ulrich Eck <ueck@net-labs.de>
+
+ubitrack_python provides seamless integration of ubitrack dataflow instances into python based applications for prototyping.
+Wrappers are provided for all data- and measurement types, utfacade, utgraph(partly), and utvisualization(draft).
+
+Requirements:
+=============
+
+- UbiTrack: (git, master) and all it's requirements
+- Python 2.7: (Anaconda for Win32 recommended https://store.continuum.io/cshop/anaconda/)
+- Boost.Python: (needs to be compiled with python, 1.49/1.54 tested)
+- boost.numpy: helper for array conversion (git, master, https://github.com/ndarray/Boost.NumPy)
+
+Hint: ubitrack_python's cmake scripts recognize utilize environment variables:
+
+- UBITRACK_PATH: binary installation directory for UbiTrack (bin/, include/, lib/)
+- UBITRACK_SOURCE_DIR: source directory of UbiTack for accessing private headers
+- UBITRACKLIB_EXTERNAL32/UBITRACKLIB_EXTERNAL64: path to the binary dependency directory
+- Boost_DIR/BOOSTROOT: binary installation directory for Boost
+- OPENCVROOT: binary installation directory for OpenCV
+- BOOST_NUMPY_DIR: binary installation for Boost.numpy
+
+
+Installation:
+=============
+
+1) install all requirements, if necessary compile from source
+2) use cmake to configure the build and compile the wrapper::
+  mkdir build
+  ccmake ../
+  make
+3) test the installation (does not yet work on win32)::
+  make test
+4) install the wrapper::
+  make install
+

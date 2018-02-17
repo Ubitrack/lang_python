@@ -1,0 +1,78 @@
+import sys, os
+from distutils.core import setup, Extension
+from distutils.command import build_ext as _build_ext
+
+CMCSOURCE = '${CMAKE_CURRENT_SOURCE_DIR}'
+CMSOURCE = '${CMAKE_SOURCE_DIR}'
+CMCBINARY = '${CMAKE_CURRENT_BINARY_DIR}'
+CMBINARY = '${CMAKE_BINARY_DIR}'
+
+if sys.platform.startswith("win32"):
+	CMCSOURCE = CMCSOURCE.replace('/','\\')
+	CMSOURCE = CMSOURCE.replace('/','\\')
+	CMCBINARY = CMCBINARY.replace('/','\\')
+	CMBINARY = CMBINARY.replace('/','\\')
+
+setup_args = dict(
+    #version='${PACKAGE_VERSION}',
+    package_dir={ '': os.path.join(CMCSOURCE, 'lib') },
+    packages=['ubitrack', 'ubitrack.core', 'ubitrack.dataflow', 'ubitrack.facade', 'ubitrack.haptics', 'ubitrack.vision', 'ubitrack.visualization'],
+    ext_modules=[Extension("ubitrack_modules", [os.path.join(CMBINARY, "build/modules/")])],
+    name='ubitrack',
+    version='1.0',
+    url='http://www.magicvisionlab.com',
+    license='MIT',
+    author='Ulrich Eck',
+    author_email='ulrich.eck@magicvisionlab.com',
+    description='wrapper for UbiTrack using boost::python'
+)
+
+class build_ext(_build_ext.build_ext):
+    def build_extensions(self):
+        ''' Copies the already-compiled modules
+        '''
+        import shutil
+        import os
+        import fnmatch
+        import sys 
+
+        ext = self.extensions[0]
+        install_root = os.path.dirname(self.get_ext_fullpath(ext.name))
+        modules_dir = ext.sources[0]
+
+        sofiles = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(modules_dir) for f in fnmatch.filter(files, '*.*')]
+        
+        for f in sofiles:
+            dirname = os.path.dirname(os.path.join(install_root, f.replace(modules_dir,"")))
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            shutil.copy(f, dirname)
+
+        # create a script for running the tests
+        
+        pypath = os.pathsep.join([install_root, "$ENV{PYTHONPATH}"])
+        with open(os.path.join(CMBINARY, "testrunner.cmake"), "w") as fd:
+            fd.write("""
+set(ENV{NOSE_WHERE} "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+set(ENV{NOSE_VERBOSE} "2")
+set(ENV{PYTHONPATH} "%s")
+
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}" -c "import nose; nose.main()"
+  OUTPUT_VARIABLE test_output
+  ERROR_VARIABLE error
+  RESULT_VARIABLE failed
+  )
+  
+if(failed)
+    MESSAGE(STATUS "#{test_output}")
+    MESSAGE(FATAL_ERROR "Nosetests failed: #{error}")
+endif(failed)
+""".replace("#","$") % (pypath,))
+
+
+setup_args['cmdclass'] = {'build_ext': build_ext }
+
+
+if __name__ == '__main__':
+    setup(**setup_args)

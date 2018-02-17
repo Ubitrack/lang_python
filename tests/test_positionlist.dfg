@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UTQLResponse name="test_positionlist" xsi:schemaLocation="http://ar.in.tum.de/ubitrack/utql http://ar.in.tum.de/files/ubitrack/utql/utql_types.xsd" xmlns="http://ar.in.tum.de/ubitrack/utql" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Pattern name="StaticPositionList" id="pattern_4">
+        <Output>
+            <Node name="A" id="node_1">
+                <GuiPos x="271" y="239"/>
+            </Node>
+            <Node name="B" id="node_2">
+                <GuiPos x="391" y="439"/>
+            </Node>
+            <Edge name="AB" source="A" destination="B">
+                <Attribute xsi:type="utql:ListAttributeType" name="staticPositionList" xmlns:utql="http://ar.in.tum.de/ubitrack/utql">
+                    <Value xsi:type="utql:ListOfPrimitiveValueType">
+                        <Attribute name="staticPosition" value="1.0  0.0  0.0"/>
+                        <Attribute name="staticPosition" value="2.0  0.0  0.0"/>
+                        <Attribute name="staticPosition" value="3.0  0.0  0.0"/>
+                    </Value>
+                </Attribute>
+                <Attribute xsi:type="utql:PrimitiveAttributeType" name="type" value="3DPositionList" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+                <Attribute xsi:type="utql:PrimitiveAttributeType" name="mode" value="pull" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+            </Edge>
+        </Output>
+        <DataflowConfiguration>
+            <UbitrackLib class="StaticPositionList"/>
+            <Attribute xsi:type="utql:PrimitiveAttributeType" name="trackman-guipos" value="0 0" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+        </DataflowConfiguration>
+    </Pattern>
+    <Pattern name="ApplicationPullSinkPositionList" id="receiver">
+        <Input>
+            <Node name="A" id="node_1">
+                <GuiPos x="271" y="239"/>
+            </Node>
+            <Node name="B" id="node_2">
+                <GuiPos x="391" y="439"/>
+            </Node>
+            <Edge name="Input" source="A" destination="B" pattern-ref="pattern_4" edge-ref="AB">
+                <GuiLandmark x="294" y="595"/>
+                <GuiLabelPos x="314" y="628"/>
+                <Attribute xsi:type="utql:ListAttributeType" name="staticPositionList" xmlns:utql="http://ar.in.tum.de/ubitrack/utql">
+                    <Value xsi:type="utql:ListOfPrimitiveValueType">
+                        <Attribute name="staticPosition" value="1.0  0.0  0.0"/>
+                        <Attribute name="staticPosition" value="2.0  0.0  0.0"/>
+                        <Attribute name="staticPosition" value="3.0  0.0  0.0"/>
+                    </Value>
+                </Attribute>
+                <Attribute xsi:type="utql:PrimitiveAttributeType" name="type" value="3DPositionList" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+                <Attribute xsi:type="utql:PrimitiveAttributeType" name="mode" value="pull" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+            </Edge>
+        </Input>
+        <DataflowConfiguration>
+            <UbitrackLib class="ApplicationPullSinkPositionList"/>
+            <Attribute xsi:type="utql:PrimitiveAttributeType" name="trackman-guipos" value="130 130" xmlns:utql="http://ar.in.tum.de/ubitrack/utql"/>
+        </DataflowConfiguration>
+    </Pattern>
+</UTQLResponse>
