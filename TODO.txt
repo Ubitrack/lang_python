@@ -1,0 +1,16 @@
+planned improvements:
+- explicit is better than implicit (on bindings level)
+  => expose Matrix/Vector types as classes and provide convenience functions to convert back and forth
+- find a way to iterate over a list of types to create wrappers - or generate them using xdress
+
+missing functionality:
+
+- Error*List Math/Measurement/Sinks are not wrapped
+- ImageMeasurement/Sink are not wrapped
+
+should create a simple OpenGL example to make starting new projects easy
+
+eventually migrate some of the HARP tools into it - including HDF5 recorder
+
+need more tests
+
