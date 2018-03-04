@@ -38,8 +38,38 @@
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
+#include <utMath/Scalar.h>
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
+#include <utMath/Quaternion.h>
+
+
+template<typename T>
+void bind_scalar(py::module &m, const std::string &type_name, const std::string &doc_txt)
+{
+    typedef Ubitrack::Math::Scalar<T> ScalarType;
+
+    py::class_<ScalarType, boost::shared_ptr<ScalarType>>(m, type_name.c_str(), doc_txt.c_str())
+        .def(py::init<>())
+        .def(py::init<T>())
+        .def_property("value", [](const ScalarType &s) { return s.m_value;}, [](ScalarType &s, T v){ s.m_value = v;})
+        .def("__repr__", [type_name](ScalarType &s) -> std::string {
+            std::ostringstream sout;
+            sout << "<";
+            sout << type_name;
+            sout << " ";
+            sout << s;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](ScalarType &s) -> std::string {
+            std::ostringstream sout;
+            sout << s;
+            return sout.str();            
+        })
+        ;
+}
+
 
 template<typename T, std::size_t N>
 void bind_vector(py::module &m, const std::string &type_name, const std::string &doc_txt)
@@ -73,12 +103,12 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
                 py::format_descriptor<T>::format(), /* Python struct-style format descriptor */
                 1,                                       /* Number of dimensions */
                 { N },                  /* Buffer dimensions */
-                { sizeof(T)/* * N */ }      /* Strides (in bytes) for each index */
+                { sizeof(T) }      /* Strides (in bytes) for each index */
             );
          })
         .def("array_view", [](py::object &obj) {
             VecType &v = obj.cast<VecType&>();
-            return py::array_t<T>({N}, {sizeof(T)/* * N */}, v.content(), obj);
+            return py::array_t<T>({N}, {sizeof(T) }, v.content(), obj);
         })
         .def("__getitem__", [](const VecType &v, long r) -> T {
             if (r >= N)
@@ -190,8 +220,146 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
 
 }
 
+
+void bind_quaternion(py::module &m, const std::string &type_name, const std::string &doc_txt)
+{
+    typedef Ubitrack::Math::Quaternion QuatType;
+
+
+    py::class_<QuatType, boost::shared_ptr<QuatType>> cls(m, type_name.c_str(), doc_txt.c_str());
+
+    cls
+        .def(py::init<>())
+        // boost quaternion constructors
+        // .def(py::init<std::complex<double>&, std::complex<double>&>())
+        // ubitrack quaternion constructors
+        .def(py::init<const Ubitrack::Math::Vector< double, 3 >&, const double>())
+        .def(py::init<const Ubitrack::Math::Matrix< double, 3, 3 >&>())
+        .def(py::init<const boost::math::quaternion<double>& >())
+        .def(py::init<double, double, double>())
+        .def(py::init<double, double, double, double>())
+        // default accessors
+        .def("x",&QuatType::x)
+        .def("y", &QuatType::y)
+        .def("z", &QuatType::z)
+        .def("w",&QuatType::w)
+        .def("normalize",(QuatType& (QuatType::*)())&QuatType::normalize, py::return_value_policy::reference_internal)
+        .def("invert", (QuatType& (QuatType::*)())&QuatType::invert, py::return_value_policy::reference_internal)
+        .def("inverted", (QuatType (QuatType::*)())&QuatType::operator~)
+
+        .def(py::self += double())
+        .def(py::self += std::complex<double>())
+        .def(py::self += py::self)
+
+        .def(py::self -= double())
+        .def(py::self -= std::complex<double>())
+        .def(py::self -= py::self)
+
+        .def(py::self *= double())
+        .def(py::self *= std::complex<double>())
+        .def(py::self *= py::self)
+
+        .def(py::self /= double())
+        .def(py::self /= std::complex<double>())
+        .def(py::self /= py::self)
+
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self)
+
+        .def(py::self == double())
+        .def(py::self == std::complex<double>())
+        .def(py::self == py::self)
+
+        .def(py::self != double())
+        .def(py::self != std::complex<double>())
+        .def(py::self != py::self)
+
+        .def(py::self * Ubitrack::Math::Vector< double, 3 >())
+
+        .def("real", (double (QuatType::*)())&QuatType::real)
+        .def("unreal",(QuatType (QuatType::*)())&QuatType::unreal)
+
+        .def("angle", &QuatType::angle)
+
+        .def("negateIfCloser", &QuatType::negateIfCloser)
+
+        .def("getEulerAngles", (Ubitrack::Math::Vector< double, 3 > (QuatType::*)(QuatType::t_EulerSequence) const)&QuatType::getEulerAngles)
+        .def("toLogarithm",    (Ubitrack::Math::Vector< double, 3 > (QuatType::*)())&QuatType::toLogarithm)
+        .def("toMatrix",       [](QuatType &q) {
+            Ubitrack::Math::Matrix< double, 3, 3 > mat;
+            q.toMatrix(mat);
+            return mat;
+        })
+        .def("toAxisAngle",    [](QuatType &q) { 
+            Ubitrack::Math::Vector< double, 3 > axis;
+            double angle;
+            q.toAxisAngle(axis, angle);
+            return std::make_tuple(axis, angle);
+        })
+        .def("toVector",       [](QuatType &q) {
+            Ubitrack::Math::Vector< double, 4 > vec;
+            q.toVector(vec);
+            return vec;
+        })
+
+        .def_static("fromLogarithm", &QuatType::fromLogarithm)
+        .def_static("fromVector", &QuatType::fromVector<Ubitrack::Math::Vector< double, 4 >>)
+
+        .def("__repr__", [type_name](QuatType &q) -> std::string {
+            std::ostringstream sout;
+            sout << "<";
+            sout << type_name;
+            sout << " ";
+            sout << q;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](QuatType &q) -> std::string {
+            std::ostringstream sout;
+            sout << q;
+            return sout.str();            
+        })
+        ;
+
+    py::enum_<QuatType::t_EulerSequence>(cls, "EULER_SEQUENCE")
+    .value("XYZ", QuatType::EULER_SEQUENCE_XYZ)
+    .value("YZX", QuatType::EULER_SEQUENCE_YZX)
+    .value("ZXY", QuatType::EULER_SEQUENCE_ZXY)
+    .value("ZYX", QuatType::EULER_SEQUENCE_ZYX)
+    .value("XZY", QuatType::EULER_SEQUENCE_XZY)
+    .value("YXZ", QuatType::EULER_SEQUENCE_YXZ)
+    ;
+
+    m.def("slerp", &Ubitrack::Math::slerp);
+    m.def("sup", &boost::math::sup<double>);
+    m.def("l1", &boost::math::l1<double>);
+    m.def("abs", &boost::math::abs<double>);
+    m.def("conj", &boost::math::conj<double>);
+    m.def("norm", &boost::math::norm<double>);
+    m.def("spherical", &boost::math::spherical<double>);
+    m.def("semipolar", &boost::math::semipolar<double>);
+    m.def("multipolar", &boost::math::multipolar<double>);
+    m.def("cylindrospherical", &boost::math::cylindrospherical<double>);
+    m.def("cylindrical", &boost::math::cylindrical<double>);
+    m.def("exp", &boost::math::exp<double>);
+    m.def("cos", &boost::math::cos<double>);
+    m.def("sin", &boost::math::sin<double>);
+    m.def("tan", &boost::math::tan<double>);
+    m.def("cosh", &boost::math::cosh<double>);
+    m.def("sinh", &boost::math::sinh<double>);
+    m.def("tanh", &boost::math::tanh<double>);
+    m.def("pow", &boost::math::pow<double>);
+
+}
+
 void bind_utMath(py::module& m)
 {
+    bind_scalar<unsigned long>(m, "ScalarID", "Math::Scalar<unsigned long>");
+    bind_scalar<int>(m, "ScalarInt", "Math::Scalar<int>");
+    bind_scalar<double>(m, "ScalarDouble", "Math::Scalar<double>");
+
 	bind_vector<double, 2>(m, "Vector2d", "Math::Vector<double,2>");
     bind_vector<double, 3>(m, "Vector3d", "Math::Vector<double,3>");
     bind_vector<double, 4>(m, "Vector4d", "Math::Vector<double,4>");
@@ -219,5 +387,7 @@ void bind_utMath(py::module& m)
     bind_matrix<float, 3, 4>(m, "Matrix34f", "Math::Matrix<float,3,4>");
     bind_matrix<float, 4, 4>(m, "Matrix44f", "Math::Matrix<float,4,4>");
     bind_matrix<float, 6, 6>(m, "Matrix66f", "Math::Matrix<float,6,6>");
+
+    bind_quaternion(m, "Quaternion", "Math::Quaternion");
 
 }
