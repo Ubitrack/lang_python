@@ -38,10 +38,15 @@
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
+#include <complex>
 #include <utMath/Scalar.h>
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
 #include <utMath/Quaternion.h>
+#include <utMath/Pose.h>
+#include <utMath/RotationVelocity.h>
+#include <utMath/CameraIntrinsics.h>
+#include <utMath/Stochastic/Average.h>
 
 
 template<typename T>
@@ -145,6 +150,35 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
 
 }
 
+template<typename T, std::size_t N>
+void bind_error_vector(py::module &m, const std::string &type_name, const std::string &doc_txt)
+{
+
+    typedef Ubitrack::Math::ErrorVector<T, N> VecType;
+
+    py::class_<VecType, boost::shared_ptr<VecType>>(m, type_name.c_str(), doc_txt.c_str())
+        .def(py::init<>())
+        .def(py::init<const Ubitrack::Math::Vector< T, N>&, const Ubitrack::Math::Matrix<T, N, N>& >())
+        .def("getRMS", &VecType::getRMS)
+        .def_property("value", [](const VecType &ev) { return ev.value;}, [](VecType &ev, Ubitrack::Math::Vector< T, N>& v){ ev.value = v;})
+        .def_property("covariance", [](const VecType &ev) { return ev.covariance;}, [](VecType &ev, Ubitrack::Math::Matrix<T, N, N>& m){ ev.covariance = m;})
+        .def("__repr__", [type_name](VecType &v) -> std::string {
+            std::ostringstream sout;
+            sout << "<";
+            sout << type_name;
+            sout << " ";
+            sout << v;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](VecType &v) -> std::string {
+            std::ostringstream sout;
+            sout << v;
+            return sout.str();            
+        })
+        ;
+
+}
 
 template<typename T, std::size_t N, std::size_t M>
 void bind_matrix(py::module &m, const std::string &type_name, const std::string &doc_txt)
@@ -332,6 +366,10 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
     .value("YXZ", QuatType::EULER_SEQUENCE_YXZ)
     ;
 
+}
+
+void bind_math_functions(py::module &m) 
+{
     m.def("slerp", &Ubitrack::Math::slerp);
     m.def("sup", &boost::math::sup<double>);
     m.def("l1", &boost::math::l1<double>);
@@ -354,11 +392,30 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
 }
 
+void bind_interpolation_functions(py::module &m)
+{
+ m.def("linearInterpolatePose",       (Ubitrack::Math::Pose (*)(const Ubitrack::Math::Pose&, const Ubitrack::Math::Pose&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateErrorPose",  (Ubitrack::Math::ErrorPose (*)(const Ubitrack::Math::ErrorPose&, const Ubitrack::Math::ErrorPose&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateQuaternion", (Ubitrack::Math::Quaternion (*)(const Ubitrack::Math::Quaternion&, const Ubitrack::Math::Quaternion&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector2",    (Ubitrack::Math::Vector< double, 2 > (*)(const Ubitrack::Math::Vector< double, 2 >&, const Ubitrack::Math::Vector< double, 2 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector3",    (Ubitrack::Math::Vector< double, 3 > (*)(const Ubitrack::Math::Vector< double, 3 >&, const Ubitrack::Math::Vector< double, 3 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector4",    (Ubitrack::Math::Vector< double, 4 > (*)(const Ubitrack::Math::Vector< double, 4 >&, const Ubitrack::Math::Vector< double, 4 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector5",    (Ubitrack::Math::Vector< double, 5 > (*)(const Ubitrack::Math::Vector< double, 5 >&, const Ubitrack::Math::Vector< double, 5 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector6",    (Ubitrack::Math::Vector< double, 6 > (*)(const Ubitrack::Math::Vector< double, 6 >&, const Ubitrack::Math::Vector< double, 6 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector7",    (Ubitrack::Math::Vector< double, 7 > (*)(const Ubitrack::Math::Vector< double, 7 >&, const Ubitrack::Math::Vector< double, 7 >&, double)) &Ubitrack::Math::linearInterpolate);
+ m.def("linearInterpolateVector8",    (Ubitrack::Math::Vector< double, 8 > (*)(const Ubitrack::Math::Vector< double, 8 >&, const Ubitrack::Math::Vector< double, 8 >&, double)) &Ubitrack::Math::linearInterpolate);
+
+}
+
 void bind_utMath(py::module& m)
 {
+    bind_math_functions(m);
+
     bind_scalar<unsigned long>(m, "ScalarID", "Math::Scalar<unsigned long>");
     bind_scalar<int>(m, "ScalarInt", "Math::Scalar<int>");
     bind_scalar<double>(m, "ScalarDouble", "Math::Scalar<double>");
+
+    bind_vector<std::size_t, 2>(m, "Vector2ui", "Math::Vector<std::size_t,2>");
 
 	bind_vector<double, 2>(m, "Vector2d", "Math::Vector<double,2>");
     bind_vector<double, 3>(m, "Vector3d", "Math::Vector<double,3>");
@@ -376,6 +433,10 @@ void bind_utMath(py::module& m)
     bind_vector<float, 7>(m, "Vector7f", "Math::Vector<float,7>");
     bind_vector<float, 8>(m, "Vector8f", "Math::Vector<float,8>");
 
+    bind_error_vector<double, 2>(m, "ErrorVector2d", "Math::ErrorVector<double, 2>");
+    bind_error_vector<double, 3>(m, "ErrorVector3d", "Math::ErrorVector<double, 3>");
+    bind_error_vector<double, 7>(m, "ErrorVector7d", "Math::ErrorVector<double, 7>");
+
     bind_matrix<double, 2, 2>(m, "Matrix22d", "Math::Matrix<double,2,2>");
     bind_matrix<double, 3, 3>(m, "Matrix33d", "Math::Matrix<double,3,3>");
     bind_matrix<double, 3, 4>(m, "Matrix34d", "Math::Matrix<double,3,4>");
@@ -389,5 +450,139 @@ void bind_utMath(py::module& m)
     bind_matrix<float, 6, 6>(m, "Matrix66f", "Math::Matrix<float,6,6>");
 
     bind_quaternion(m, "Quaternion", "Math::Quaternion");
+
+    bind_interpolation_functions(m);
+
+
+    py::class_<Ubitrack::Math::Pose, boost::shared_ptr<Ubitrack::Math::Pose> > pose_cls(m, "Pose", "Math::Pose");
+    pose_cls
+        .def(py::init<const Ubitrack::Math::Quaternion&, const Ubitrack::Math::Vector< double, 3 >&>())
+        .def(py::init<const Ubitrack::Math::Matrix< double, 4, 4 >&>())
+        .def("rotation", &Ubitrack::Math::Pose::rotation, py::return_value_policy::reference_internal)
+        .def("translation", &Ubitrack::Math::Pose::translation, py::return_value_policy::reference_internal)
+        .def("scalePose", &Ubitrack::Math::Pose::scalePose)
+
+        .def("toVector", [](Ubitrack::Math::Pose &p) {
+            Ubitrack::Math::Vector< double, 7 > vec;
+            p.toVector(vec);
+            return vec;
+        })
+        .def_static("fromVector", &Ubitrack::Math::Pose::fromVector<Ubitrack::Math::Vector< double, 7 >>)
+
+        .def("toMatrix", [](Ubitrack::Math::Pose &p) {
+            Ubitrack::Math::Matrix< double, 4, 4 > mat(p);
+            return mat;
+        })
+
+        .def(py::self * Ubitrack::Math::Vector< double, 3 >())
+        .def(py::self * py::self)
+        .def(py::self == py::self)
+
+        .def("invert", (Ubitrack::Math::Pose (Ubitrack::Math::Pose::*)())&Ubitrack::Math::Pose::operator~)
+
+        .def("__repr__", [](Ubitrack::Math::Pose &p) -> std::string {
+            std::ostringstream sout;
+            sout << "<Pose ";
+            sout << p;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](Ubitrack::Math::Pose &p) -> std::string {
+            std::ostringstream sout;
+            sout << p;
+            return sout.str();            
+        })
+        ;
+
+    py::class_<Ubitrack::Math::ErrorPose, boost::shared_ptr<Ubitrack::Math::ErrorPose> >(m, "ErrorPose", "Math::ErrorPose", pose_cls)
+        .def(py::init<const Ubitrack::Math::Quaternion&, const Ubitrack::Math::Vector< double, 3 >&, const Ubitrack::Math::Matrix< double, 6, 6 >& >())
+        .def(py::init<const Ubitrack::Math::Pose&, const Ubitrack::Math::Matrix< double, 6, 6 >& >())
+        .def("covariance", &Ubitrack::Math::ErrorPose::covariance)
+
+        .def("toAdditiveErrorVector", [](Ubitrack::Math::ErrorPose &ep){
+            Ubitrack::Math::ErrorVector< double, 7 > ev;
+            ep.toAdditiveErrorVector(ev);
+            return ev;
+        })
+        .def_static("fromAdditiveErrorVector", &Ubitrack::Math::ErrorPose::fromAdditiveErrorVector)
+
+        .def("invert", (Ubitrack::Math::ErrorPose (Ubitrack::Math::ErrorPose::*)())&Ubitrack::Math::ErrorPose::operator~)
+
+        .def("__repr__", [](Ubitrack::Math::ErrorPose &ep) -> std::string {
+            std::ostringstream sout;
+            sout << "<ErrorPose ";
+            sout << ep;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](Ubitrack::Math::ErrorPose &ep) -> std::string {
+            std::ostringstream sout;
+            sout << ep;
+            return sout.str();            
+        })
+        ;
+
+    py::class_<Ubitrack::Math::RotationVelocity, boost::shared_ptr<Ubitrack::Math::RotationVelocity> >(m, "RotationVelocity", "Math::RotationVelocity")
+        .def(py::init<double, double, double>())
+        .def("integrate", &Ubitrack::Math::RotationVelocity::integrate)
+        .def("angularVelocity", &Ubitrack::Math::RotationVelocity::angularVelocity)
+        .def("axis", &Ubitrack::Math::RotationVelocity::axis)
+        .def("toVector", [](Ubitrack::Math::RotationVelocity &rv){
+            Ubitrack::Math::Vector< double, 3 > v(rv);
+            return v;
+        })
+ 
+        .def("__repr__", [](Ubitrack::Math::RotationVelocity &rv) -> std::string {
+            std::ostringstream sout;
+            sout << "<RotationVelocity ";
+            sout << rv;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](Ubitrack::Math::RotationVelocity &rv) -> std::string {
+            std::ostringstream sout;
+            sout << rv;
+            return sout.str();            
+        })
+        ;
+
+
+    py::class_<Ubitrack::Math::CameraIntrinsics<double>, boost::shared_ptr<Ubitrack::Math::CameraIntrinsics<double>> > ci_cls(m, "CameraIntrinsics", "Math::CameraIntrinsics<double>");
+    ci_cls
+        .def(py::init<const Ubitrack::Math::CameraIntrinsics<double> &>())
+        .def_property("intrinsics", 
+            [](const Ubitrack::Math::CameraIntrinsics<double> &ci) { return ci.matrix;}, 
+            [](Ubitrack::Math::CameraIntrinsics<double> &ci, Ubitrack::Math::Matrix< double, 3, 3>& m){ ci.matrix = m;}
+            )
+        .def_property("dimension", 
+            [](const Ubitrack::Math::CameraIntrinsics<double> &ci) { return ci.dimension;}, 
+            [](Ubitrack::Math::CameraIntrinsics<double> &ci, Ubitrack::Math::Vector< std::size_t, 2 >& d){ ci.dimension = d;}
+            )
+        .def_property("tangential_params", 
+            [](const Ubitrack::Math::CameraIntrinsics<double> &ci) { return ci.tangential_params;}, 
+            [](Ubitrack::Math::CameraIntrinsics<double> &ci, Ubitrack::Math::Vector< double, 2 >& v){ ci.tangential_params = v;}
+            )
+        .def_property("radial_params", 
+            [](const Ubitrack::Math::CameraIntrinsics<double> &ci) { return ci.radial_params;}, 
+            [](Ubitrack::Math::CameraIntrinsics<double> &ci, Ubitrack::Math::Vector< double, 6 >& v){ ci.radial_params = v;}
+            )
+ 
+        .def("angleVertical", &Ubitrack::Math::CameraIntrinsics<double>::angleVertical)
+        .def("angleHorizontal", &Ubitrack::Math::CameraIntrinsics<double>::angleHorizontal)
+        .def("angleDiagonal", &Ubitrack::Math::CameraIntrinsics<double>::angleDiagonal)
+ 
+        .def("__repr__", [](Ubitrack::Math::CameraIntrinsics<double> &ci) -> std::string {
+            std::ostringstream sout;
+            sout << "<CameraIntrinsics ";
+            sout << ci;
+            sout << " >";
+            return sout.str();            
+        })
+        .def("__str__", [](Ubitrack::Math::CameraIntrinsics<double> &ci) -> std::string {
+            std::ostringstream sout;
+            sout << ci;
+            return sout.str();            
+        })
+        ;
 
 }
