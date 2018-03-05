@@ -40,7 +40,6 @@
 #include <pybind11/functional.h>
 
 
-
 namespace py = pybind11;
 using namespace py::literals;
 

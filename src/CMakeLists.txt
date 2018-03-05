@@ -9,8 +9,6 @@
 
 set(MODULE_SOURCES
 	ubitrack.cpp
-	core_math.cpp
-	core_measurement.cpp
 	)
 
 ADD_LIBRARY(ubitrack SHARED ${MODULE_SOURCES})

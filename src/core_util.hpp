@@ -25,34 +25,14 @@
 /**
  * @ingroup python
  * @file
- * Ubitrack Python Bindings - Main Module.
+ * Ubitrack Python Bindings - Math Module.
  * @author Ulrich Eck <ulrich.eck@tum.de>
  */
 
-
 #include "ubitrack_python/opaque_types.h"
 #include "ubitrack_python/pyubitrack.h"
-#include <string>
 
-#include "core_math.hpp"
-#include "core_measurement.hpp"
-#include "core_util.hpp"
-#include "core_calibration.hpp"
 
-PYBIND11_MODULE(ubitrack, m)
+void bind_utUtil(py::module& m)
 {
-    auto m_core = m.def_submodule("core", "Core Functionality");
-
-    auto m_core_math = m_core.def_submodule("math", "Math Types");
-    bind_utMath(m_core_math);
-
-    auto m_core_measurement = m_core.def_submodule("measurement", "Measurement Types");
-    bind_utMeasurement(m_core_measurement);
-
-    auto m_core_util = m_core.def_submodule("util", "Utility Functions");
-    bind_utUtil(m_core_util);
-
-    auto m_core_calibration = m_core.def_submodule("calibration", "Calibration Functions");
-    bind_utCalibration(m_core_calibration);
-
 }
