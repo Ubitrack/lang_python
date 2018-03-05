@@ -172,6 +172,26 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
         })
         .def("__iter__", [](const VecType &v) { return py::make_iterator(v.begin(), v.end()); },
                          py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */)
+        .def("__eq__", [](VecType &v, VecType &o) {
+            return v == o;
+        }, py::is_operator())
+        .def("__eq__", [](VecType &m, py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<T>::format())
+                return false;
+
+            if (info.ndim != 1)
+                return false;
+
+            if (info.shape[0] != N)
+                return false;
+
+            return m == VecType(static_cast<T *>(info.ptr));
+        }, py::is_operator())
         .def("__repr__", [type_name](VecType &v) -> std::string {
             std::ostringstream sout;
             sout << "<";
@@ -280,8 +300,31 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
                 throw pybind11::key_error("Invalid Key");
             m(i.first, i.second) = v;
         })
-        // .def("__iter__", [](const MatType &m) { return py::make_iterator(m.begin(), m.end()); },
-        //                  py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */)
+        .def("__len__", &MatType::size)
+        .def("size1", &MatType::size1)
+        .def("size2", &MatType::size2)
+        .def_static("identity", &MatType::identity)
+        .def_static("zeros", &MatType::zeros)
+        .def("__eq__", [](MatType &m, MatType &o) {
+            return m == o;
+        }, py::is_operator())
+        .def("__eq__", [](MatType &m, py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<T>::format())
+                return false;
+
+            if (info.ndim != 2)
+                return false;
+
+            if ((info.shape[0] != N) && (info.shape[1] != M))
+                return false;
+
+            return m == MatType(static_cast<T *>(info.ptr));
+        }, py::is_operator())
         .def("__repr__", [type_name](MatType &m) -> std::string {
             std::ostringstream sout;
             sout << "<";
@@ -296,9 +339,7 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
             sout << m;
             return sout.str();            
         })
-        .def("__len__", &MatType::size)
         ;
-
 }
 
 /*
@@ -612,6 +653,20 @@ void bind_stl_vector(py::module &m, const std::string &type_name, const std::str
         .def("push_back", (void (VType::*)(const T &)) &VType::push_back)
         .def("back", (T &(VType::*)()) &VType::back)
         .def("__len__", [](const VType &v) { return v.size(); })
+        .def("__getitem__", [](const VType &v, long r) -> T {
+            if (r >= v.size())
+                throw pybind11::key_error("Invalid Key");
+            if (r < 0)
+                throw pybind11::key_error("Invalid Key");
+            return v.at(r);
+        })
+        .def("__setitem__", [](VType &v, long r, T s) {
+            if (r >= v.size())
+                throw pybind11::key_error("Invalid Key");
+            if (r < 0)
+                throw pybind11::key_error("Invalid Key");
+            v.at(r) = s;
+        })
         .def("__iter__", [](VType &v) {
            return py::make_iterator(v.begin(), v.end());
         }, py::keep_alive<0, 1>());

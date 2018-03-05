@@ -1,23 +1,8 @@
-__author__ = 'jack'
-
-from nose import with_setup
-
 from ubitrack.core import math as utmath
 from ubitrack.core import measurement
 import numpy as np
 import math
 
-def setup_func():
-    "set up test fixtures"
-    pass
-
-def teardown_func():
-    "tear down test fixtures"
-    pass
-
-
-
-@with_setup(setup_func, teardown_func)
 def test_measurement_button():
     "test measurement button"
 
@@ -33,8 +18,6 @@ def test_measurement_button():
     b.invalidate()
     assert b.invalid()
     
-    
-@with_setup(setup_func, teardown_func)
 def test_measurement_pos2d():
     "test measurement Position2D"
 
@@ -42,15 +25,13 @@ def test_measurement_pos2d():
     assert i.invalid()
     assert i.get() == None
     
-    b = measurement.Position2D(123, np.array([1.0,2.0]))
-    print b.get()
-    print np.array([1.0,2.0])
+    b = measurement.Position2D(123, utmath.Vector2d(1.0,2.0))
+    print(b.get())
+    print(np.array([1.0,2.0]))
     assert np.all(b.get() == np.array([1.0,2.0]))
     assert b.time() == 123
     assert b.invalid() == False
-
     
-@with_setup(setup_func, teardown_func)
 def test_measurement_pos3d():
     "test measurement Position(3D)"
 
@@ -58,13 +39,11 @@ def test_measurement_pos3d():
     assert i.invalid()
     assert i.get() == None
     
-    b = measurement.Position(123, np.array([1.0, 2.0, 3.0]))
+    b = measurement.Position(123, utmath.Vector3d(1.0, 2.0, 3.0))
     assert np.all(b.get() == np.array([1.0, 2.0, 3.0]))
     assert b.time() == 123
     assert b.invalid() == False
     
-
-@with_setup(setup_func, teardown_func)
 def test_measurement_matrix3x3():
     "test measurement Matrix3x3"
 
@@ -72,15 +51,13 @@ def test_measurement_matrix3x3():
     assert i.invalid()
     assert i.get() == None
     m = np.array([[1.0, 2.0, 3.0],[1.0, 2.0, 3.0],[1.0, 2.0, 3.0]])
-    b = measurement.Matrix3x3(123, m)
-    print b.get()
-    print m
+    b = measurement.Matrix3x3(123, utmath.Matrix33d(m))
+    print(b.get())
+    print(m)
     assert np.all(b.get() == m)
     assert b.time() == 123
     assert b.invalid() == False
     
-
-@with_setup(setup_func, teardown_func)
 def test_measurement_rotation():
     "test measurement Rotation"
 
@@ -95,9 +72,6 @@ def test_measurement_rotation():
     assert b.time() == 123
     assert b.invalid() == False
     
-
-
-@with_setup(setup_func, teardown_func)
 def test_measurement_pose():
     "test measurement Pose"
 
@@ -113,17 +87,16 @@ def test_measurement_pose():
     assert b.time() == 123
     assert b.invalid() == False
     
-
-
-
-
-@with_setup(setup_func, teardown_func)
 def test_measurement_poselist():
     "test measurement poselist"
 
-    m = measurement.test_poselistmeasurement()
+    poses = utmath.PoseList()
+    for i in range(5):
+        poses.push_back(utmath.Pose(utmath.Quaternion(0.0, 0.0, 0.0, 1.0), utmath.Vector3d(1.0, 2.0, 3.0)))
+
+    m = measurement.PoseList(measurement.now(), poses)
     result = m.get()
-    assert len(result) == 3
+    assert len(result) == 5
     
     element = result[0]
     assert np.all(element.translation() == np.array([1.0, 2.0, 3.0])) 
