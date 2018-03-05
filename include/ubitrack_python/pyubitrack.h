@@ -39,12 +39,12 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 
+
+
 namespace py = pybind11;
 using namespace py::literals;
 
-PYBIND11_MAKE_OPAQUE(std::vector<int>);
-PYBIND11_MAKE_OPAQUE(std::vector<double>);
-//PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Matrix4d>);
+
 
 // some helper functions
 namespace pybind11 {

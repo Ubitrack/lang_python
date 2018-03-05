@@ -29,26 +29,24 @@
  * @author Ulrich Eck <ulrich.eck@tum.de>
  */
 
+#include "ubitrack_python/opaque_types.h"
+#include "ubitrack_python/pyubitrack.h"
+
 #include <string>
 #include <sstream>
+#include <complex>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
-#include "ubitrack_python/pyubitrack.h"
+#include <utMath/Stochastic/Average.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
-#include <complex>
-#include <utMath/Scalar.h>
-#include <utMath/Vector.h>
-#include <utMath/Matrix.h>
-#include <utMath/Quaternion.h>
-#include <utMath/Pose.h>
-#include <utMath/RotationVelocity.h>
-#include <utMath/CameraIntrinsics.h>
-#include <utMath/Stochastic/Average.h>
 
-
+/*
+ * Scalar Types
+ */
 template<typename T>
 void bind_scalar(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
@@ -76,13 +74,56 @@ void bind_scalar(py::module &m, const std::string &type_name, const std::string 
 }
 
 
+
+/*
+ * Vector Types
+ */
+
+template<typename T, std::size_t N>
+struct vector_constructor_helper
+{
+    template<typename Class_>
+    void bind(Class_ &cls) {}
+};
+
+
+template<typename T>
+struct vector_constructor_helper<T, 2> 
+{
+    template<typename Class_>
+    void bind(Class_ &cls) {
+        cls.def(py::init<T, T>());
+    }
+};
+
+template<typename T>
+struct vector_constructor_helper<T, 3> 
+{
+    template<typename Class_>
+    void bind(Class_ &cls) {
+        cls.def(py::init<T, T, T>());
+    }
+};
+
+template<typename T>
+struct vector_constructor_helper<T, 4> 
+{
+    template<typename Class_>
+    void bind(Class_ &cls) {
+        cls.def(py::init<T, T, T, T>());
+    }
+};
+
 template<typename T, std::size_t N>
 void bind_vector(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
 
     typedef Ubitrack::Math::Vector<T, N> VecType;
+    py::class_<VecType, boost::shared_ptr<VecType>> vec_cls(m, type_name.c_str(), doc_txt.c_str(), py::buffer_protocol());
 
-    py::class_<VecType, boost::shared_ptr<VecType>>(m, type_name.c_str(), doc_txt.c_str(), py::buffer_protocol())
+    vector_constructor_helper<T, N>().bind(vec_cls);
+
+    vec_cls
         .def(py::init<>())
         .def("__init__", [](VecType &v, py::buffer b) {
 
@@ -148,8 +189,11 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
         .def("__len__", &VecType::size)
         ;
 
-}
+}    
 
+/*
+ * ErrorVector Types
+ */
 template<typename T, std::size_t N>
 void bind_error_vector(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
@@ -180,6 +224,9 @@ void bind_error_vector(py::module &m, const std::string &type_name, const std::s
 
 }
 
+/*
+ * Matrix Types
+ */
 template<typename T, std::size_t N, std::size_t M>
 void bind_matrix(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
@@ -254,7 +301,9 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
 
 }
 
-
+/*
+ * Quaternion Types
+ */
 void bind_quaternion(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
     typedef Ubitrack::Math::Quaternion QuatType;
@@ -265,10 +314,48 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
     cls
         .def(py::init<>())
         // boost quaternion constructors
-        // .def(py::init<std::complex<double>&, std::complex<double>&>())
+        .def("__init__", [](QuatType &q, std::complex<double>& c1, std::complex<double>& c2) {
+            new (&q) QuatType(boost::math::quaternion<double>(c1, c2));
+        })
         // ubitrack quaternion constructors
         .def(py::init<const Ubitrack::Math::Vector< double, 3 >&, const double>())
+        .def("__init__", [](QuatType &q, py::buffer b, double angle) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<double>::format())
+                throw std::runtime_error("Incompatible array datatype!");
+
+            if (info.ndim != 1)
+                throw std::runtime_error("Incompatible array dimension!");
+
+            if (info.shape[0] != 3)
+                throw std::runtime_error("Incompatible array size!");
+
+            Ubitrack::Math::Vector<double, 3> v(static_cast<double *>(info.ptr));
+            new (&q) QuatType(v, angle);
+        })
         .def(py::init<const Ubitrack::Math::Matrix< double, 3, 3 >&>())
+        .def("__init__", [](QuatType &q, py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<double>::format())
+                throw std::runtime_error("Incompatible array datatype!");
+
+            if (info.ndim != 2)
+                throw std::runtime_error("Incompatible array dimension!");
+
+            if ((info.shape[0] != 3) && (info.shape[1] != 3))
+                throw std::runtime_error("Incompatible array size!");
+
+            Ubitrack::Math::Matrix<double, 3, 3> m(static_cast<double *>(info.ptr));
+            new (&q) QuatType(m);
+        })
         .def(py::init<const boost::math::quaternion<double>& >())
         .def(py::init<double, double, double>())
         .def(py::init<double, double, double, double>())
@@ -281,26 +368,64 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
         .def("invert", (QuatType& (QuatType::*)())&QuatType::invert, py::return_value_policy::reference_internal)
         .def("inverted", (QuatType (QuatType::*)())&QuatType::operator~)
 
-        .def(py::self += double())
-        .def(py::self += std::complex<double>())
-        .def(py::self += py::self)
+        // operator overloading is implemented explicitly to avoid fiddling with boost::math::quaternions in python
+        // iadd: +=
+        .def("__iadd__", [](const QuatType &l, double r) {
+                return QuatType(boost::math::quaternion<double>(l) += r);
+            }, py::is_operator())
+        .def("__iadd__", [](const QuatType &l, std::complex<double> r) {
+                return QuatType(boost::math::quaternion<double>(l) += r);
+            }, py::is_operator())
+        .def("__iadd__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) += r);
+            }, py::is_operator())
 
-        .def(py::self -= double())
-        .def(py::self -= std::complex<double>())
-        .def(py::self -= py::self)
+        // isub: -=
+        .def("__isub__", [](const QuatType &l, double r) {
+                return QuatType(boost::math::quaternion<double>(l) -= r);
+            }, py::is_operator())
+        .def("__isub__", [](const QuatType &l, std::complex<double> r) {
+                return QuatType(boost::math::quaternion<double>(l) -= r);
+            }, py::is_operator())
+        .def("__isub__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) -= r);
+            }, py::is_operator())
 
-        .def(py::self *= double())
-        .def(py::self *= std::complex<double>())
-        .def(py::self *= py::self)
+        // imul: *=
+        .def("__imul__", [](const QuatType &l, double r) {
+                return QuatType(boost::math::quaternion<double>(l) *= r);
+            }, py::is_operator())
+        .def("__imul__", [](const QuatType &l, std::complex<double> r) {
+                return QuatType(boost::math::quaternion<double>(l) *= r);
+            }, py::is_operator())
+        .def("__imul__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) *= r);
+            }, py::is_operator())
 
-        .def(py::self /= double())
-        .def(py::self /= std::complex<double>())
-        .def(py::self /= py::self)
+        // idiv: /=
+        .def("__idiv__", [](const QuatType &l, double r) {
+                return QuatType(boost::math::quaternion<double>(l) /= r);
+            }, py::is_operator())
+        .def("__idiv__", [](const QuatType &l, std::complex<double> r) {
+                return QuatType(boost::math::quaternion<double>(l) /= r);
+            }, py::is_operator())
+        .def("__idiv__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) /= r);
+            }, py::is_operator())
 
-        .def(py::self + py::self)
-        .def(py::self - py::self)
-        .def(py::self * py::self)
-        .def(py::self / py::self)
+        // add, sub, mul, div
+        .def("__add__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) + r);
+            }, py::is_operator())
+        .def("__sub__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) - r);
+            }, py::is_operator())
+        .def("__mul__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) * r);
+            }, py::is_operator())
+        .def("__truediv__", [](const QuatType &l, const QuatType& r) {
+                return QuatType(boost::math::quaternion<double>(l) / r);
+            }, py::is_operator())
 
         .def(py::self == double())
         .def(py::self == std::complex<double>())
@@ -340,6 +465,24 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
         .def_static("fromLogarithm", &QuatType::fromLogarithm)
         .def_static("fromVector", &QuatType::fromVector<Ubitrack::Math::Vector< double, 4 >>)
+        .def_static("fromVector", [](py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<double>::format())
+                throw std::runtime_error("Incompatible array datatype!");
+
+            if (info.ndim != 1)
+                throw std::runtime_error("Incompatible array dimension!");
+
+            if (info.shape[0] != 4)
+                throw std::runtime_error("Incompatible array size!");
+            
+            Ubitrack::Math::Vector<double, 4> v(static_cast<double *>(info.ptr));
+            return QuatType(v( 0 ), v( 1 ), v( 2 ), v( 3 ));
+        })
 
         .def("__repr__", [type_name](QuatType &q) -> std::string {
             std::ostringstream sout;
@@ -368,30 +511,77 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
 }
 
+/*
+ * Math Functions provided by Boost::math
+ */
 void bind_math_functions(py::module &m) 
 {
     m.def("slerp", &Ubitrack::Math::slerp);
+
     m.def("sup", &boost::math::sup<double>);
+    m.def("sup", [](const Ubitrack::Math::Quaternion &q){ return boost::math::sup(q);});
+
     m.def("l1", &boost::math::l1<double>);
+    m.def("l1", [](const Ubitrack::Math::Quaternion &q){ return boost::math::l1(q);});
+
     m.def("abs", &boost::math::abs<double>);
-    m.def("conj", &boost::math::conj<double>);
+    m.def("abs", [](const Ubitrack::Math::Quaternion &q){ return boost::math::abs(q);});
+
     m.def("norm", &boost::math::norm<double>);
-    m.def("spherical", &boost::math::spherical<double>);
-    m.def("semipolar", &boost::math::semipolar<double>);
-    m.def("multipolar", &boost::math::multipolar<double>);
-    m.def("cylindrospherical", &boost::math::cylindrospherical<double>);
-    m.def("cylindrical", &boost::math::cylindrical<double>);
+    m.def("norm", [](const Ubitrack::Math::Quaternion &q){ return boost::math::norm(q);});
+
+    m.def("conj", &boost::math::conj<double>);
+    m.def("conj", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::conj(q));});
+
+    m.def("spherical", [](const double &rho, const double &theta, const double &phi1, const double &phi2){ 
+        return Ubitrack::Math::Quaternion(boost::math::spherical(rho, theta, phi1, phi2));
+    });
+
+    m.def("semipolar", [](const double &rho, const double &alpha, const double &theta1, const double &theta2){ 
+        return Ubitrack::Math::Quaternion(boost::math::semipolar(rho, alpha, theta1, theta2));
+    });
+
+    m.def("multipolar", [](const double &rho1, const double &theta1, const double &rho2, const double &theta2){ 
+        return Ubitrack::Math::Quaternion(boost::math::multipolar(rho1, theta1, rho2, theta2));
+    });
+
+    m.def("cylindrospherical", [](const double &t, const double &radius, const double &longitude, const double &latitude){ 
+        return Ubitrack::Math::Quaternion(boost::math::cylindrospherical(t, radius, longitude, latitude));
+    });
+
+    m.def("cylindrical", [](const double &r, const double &angle, const double &h1, const double &h2){ 
+        return Ubitrack::Math::Quaternion(boost::math::cylindrical(r, angle, h1, h2));
+    });
+
     m.def("exp", &boost::math::exp<double>);
+    m.def("exp", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::exp(q));});
+
     m.def("cos", &boost::math::cos<double>);
+    m.def("cos", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::cos(q));});
+
     m.def("sin", &boost::math::sin<double>);
+    m.def("sin", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::sin(q));});
+
     m.def("tan", &boost::math::tan<double>);
+    m.def("tan", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::tan(q));});
+
     m.def("cosh", &boost::math::cosh<double>);
+    m.def("cosh", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::cosh(q));});
+
     m.def("sinh", &boost::math::sinh<double>);
+    m.def("sinh", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::sinh(q));});
+
     m.def("tanh", &boost::math::tanh<double>);
+    m.def("tanh", [](const Ubitrack::Math::Quaternion &q){ return Ubitrack::Math::Quaternion(boost::math::tanh(q));});
+
     m.def("pow", &boost::math::pow<double>);
+    m.def("pow", [](const Ubitrack::Math::Quaternion &q, int n){ return Ubitrack::Math::Quaternion(boost::math::pow(q, n));});
 
 }
 
+/*
+ * Interpolation functions
+ */
 void bind_interpolation_functions(py::module &m)
 {
  m.def("linearInterpolatePose",       (Ubitrack::Math::Pose (*)(const Ubitrack::Math::Pose&, const Ubitrack::Math::Pose&, double)) &Ubitrack::Math::linearInterpolate);
@@ -406,6 +596,27 @@ void bind_interpolation_functions(py::module &m)
  m.def("linearInterpolateVector8",    (Ubitrack::Math::Vector< double, 8 > (*)(const Ubitrack::Math::Vector< double, 8 >&, const Ubitrack::Math::Vector< double, 8 >&, double)) &Ubitrack::Math::linearInterpolate);
 
 }
+
+/*
+ * STL Vector Helpers
+ */
+template<typename T>
+void bind_stl_vector(py::module &m, const std::string &type_name, const std::string &doc_txt)
+{
+    typedef std::vector<T> VType;
+
+    py::class_<VType>(m, type_name.c_str(), doc_txt.c_str())
+        .def(py::init<>())
+        .def("pop_back", &VType::pop_back)
+        /* There are multiple versions of push_back(), etc. Select the right ones. */
+        .def("push_back", (void (VType::*)(const T &)) &VType::push_back)
+        .def("back", (T &(VType::*)()) &VType::back)
+        .def("__len__", [](const VType &v) { return v.size(); })
+        .def("__iter__", [](VType &v) {
+           return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0, 1>());
+}
+
 
 void bind_utMath(py::module& m)
 {
@@ -457,7 +668,43 @@ void bind_utMath(py::module& m)
     py::class_<Ubitrack::Math::Pose, boost::shared_ptr<Ubitrack::Math::Pose> > pose_cls(m, "Pose", "Math::Pose");
     pose_cls
         .def(py::init<const Ubitrack::Math::Quaternion&, const Ubitrack::Math::Vector< double, 3 >&>())
+        .def("__init__", [](Ubitrack::Math::Pose &p, const Ubitrack::Math::Quaternion& q, py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<double>::format())
+                throw std::runtime_error("Incompatible array datatype!");
+
+            if (info.ndim != 1)
+                throw std::runtime_error("Incompatible array dimension!");
+
+            if (info.shape[0] != 3)
+                throw std::runtime_error("Incompatible array size!");
+
+            Ubitrack::Math::Vector<double, 3> v(static_cast<double *>(info.ptr));
+            new (&p) Ubitrack::Math::Pose(q, v);
+        })
         .def(py::init<const Ubitrack::Math::Matrix< double, 4, 4 >&>())
+        .def("__init__", [](Ubitrack::Math::Pose &p, py::buffer b) {
+
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<double>::format())
+                throw std::runtime_error("Incompatible array datatype!");
+
+            if (info.ndim != 2)
+                throw std::runtime_error("Incompatible array dimension!");
+
+            if ((info.shape[0] != 4) && (info.shape[1] != 4))
+                throw std::runtime_error("Incompatible array size!");
+
+            Ubitrack::Math::Matrix<double, 4, 4> m(static_cast<double *>(info.ptr));
+            new (&p) Ubitrack::Math::Pose(m);
+        })
         .def("rotation", &Ubitrack::Math::Pose::rotation, py::return_value_policy::reference_internal)
         .def("translation", &Ubitrack::Math::Pose::translation, py::return_value_policy::reference_internal)
         .def("scalePose", &Ubitrack::Math::Pose::scalePose)
@@ -584,5 +831,41 @@ void bind_utMath(py::module& m)
             return sout.str();            
         })
         ;
+
+    bind_stl_vector<Ubitrack::Math::Scalar<unsigned long>>(m, "ScalarIDList", "Math::Scalar<unsigned long>");
+    bind_stl_vector<Ubitrack::Math::Scalar<int>>(m, "ScalarIntList", "Math::Scalar<int>");
+    bind_stl_vector<Ubitrack::Math::Scalar<double>>(m, "ScalarDoubleList", "Math::Scalar<double>");
+    bind_stl_vector<UbitrackMathTypes::Vector2d>(m, "Vector2dList", "Math::Vector<double,2>");
+    bind_stl_vector<UbitrackMathTypes::Vector3d>(m, "Vector3dList", "Math::Vector<double,3>");
+    bind_stl_vector<UbitrackMathTypes::Vector4d>(m, "Vector4dList", "Math::Vector<double,4>");
+    bind_stl_vector<UbitrackMathTypes::Vector5d>(m, "Vector5dList", "Math::Vector<double,5>");
+    bind_stl_vector<UbitrackMathTypes::Vector6d>(m, "Vector6dList", "Math::Vector<double,6>");
+    bind_stl_vector<UbitrackMathTypes::Vector7d>(m, "Vector7dList", "Math::Vector<double,7>");
+    bind_stl_vector<UbitrackMathTypes::Vector8d>(m, "Vector8dList", "Math::Vector<double,8>");
+    bind_stl_vector<UbitrackMathTypes::Vector2f>(m, "Vector2fList", "Math::Vector<float,2>");
+    bind_stl_vector<UbitrackMathTypes::Vector3f>(m, "Vector3fList", "Math::Vector<float,3>");
+    bind_stl_vector<UbitrackMathTypes::Vector4f>(m, "Vector4fList", "Math::Vector<float,4>");
+    bind_stl_vector<UbitrackMathTypes::Vector5f>(m, "Vector5fList", "Math::Vector<float,5>");
+    bind_stl_vector<UbitrackMathTypes::Vector6f>(m, "Vector6fList", "Math::Vector<float,6>");
+    bind_stl_vector<UbitrackMathTypes::Vector7f>(m, "Vector7fList", "Math::Vector<float,7>");
+    bind_stl_vector<UbitrackMathTypes::Vector8f>(m, "Vector8fList", "Math::Vector<float,8>");
+    bind_stl_vector<UbitrackMathTypes::ErrorVector2d>(m, "ErrorVector2dList", "Math::ErrorVector<double,2>");
+    bind_stl_vector<UbitrackMathTypes::ErrorVector3d>(m, "ErrorVector3dList", "Math::ErrorVector<double,3>");
+    bind_stl_vector<UbitrackMathTypes::ErrorVector7d>(m, "ErrorVector7dList", "Math::ErrorVector<double,7>");
+    bind_stl_vector<UbitrackMathTypes::Matrix22d>(m, "Matrix22dList", "Math::Matrix<double,2,2>");
+    bind_stl_vector<UbitrackMathTypes::Matrix33d>(m, "Matrix33dList", "Math::Matrix<double,3,3>");
+    bind_stl_vector<UbitrackMathTypes::Matrix34d>(m, "Matrix34dList", "Math::Matrix<double,3,4>");
+    bind_stl_vector<UbitrackMathTypes::Matrix44d>(m, "Matrix44dList", "Math::Matrix<double,4,4>");
+    bind_stl_vector<UbitrackMathTypes::Matrix66d>(m, "Matrix66dList", "Math::Matrix<double,6,6>");
+    bind_stl_vector<UbitrackMathTypes::Matrix22f>(m, "Matrix22fList", "Math::Matrix<float,2,2>");
+    bind_stl_vector<UbitrackMathTypes::Matrix33f>(m, "Matrix33fList", "Math::Matrix<float,3,3>");
+    bind_stl_vector<UbitrackMathTypes::Matrix34f>(m, "Matrix34fList", "Math::Matrix<float,3,4>");
+    bind_stl_vector<UbitrackMathTypes::Matrix44f>(m, "Matrix44fList", "Math::Matrix<float,4,4>");
+    bind_stl_vector<UbitrackMathTypes::Matrix66f>(m, "Matrix66fList", "Math::Matrix<float,6,6>");
+    bind_stl_vector<Ubitrack::Math::Pose>(m, "PoseList", "Math::Pose");
+    bind_stl_vector<Ubitrack::Math::ErrorPose>(m, "ErrorPoseList", "Math::ErrorPose");
+    bind_stl_vector<Ubitrack::Math::RotationVelocity>(m, "RotationVelocityList", "Math::RotationVelocity");
+    bind_stl_vector<Ubitrack::Math::CameraIntrinsics<double>>(m, "CameraIntrinsicsList", "Math::CameraIntrinsics");
+
 
 }

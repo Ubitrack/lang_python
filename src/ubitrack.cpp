@@ -30,6 +30,7 @@
  */
 
 
+#include "ubitrack_python/opaque_types.h"
 #include "ubitrack_python/pyubitrack.h"
 #include <string>
 
@@ -45,7 +46,7 @@ void bind_utMeasurement(py::module& m);
 // void bind_utVisualization(py::module& m);
 // void bind_utRenderAPI(py::module& m);
 
-PYBIND11_MODULE(ubitrack_python, m)
+PYBIND11_MODULE(ubitrack, m)
 {
 //     warn_about_unavailable_but_used_cpu_instructions();
 
