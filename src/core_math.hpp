@@ -37,12 +37,7 @@
 #include <complex>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include <utMath/Stochastic/Average.h>
-
-PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
-
 
 /*
  * Scalar Types

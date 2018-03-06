@@ -39,11 +39,14 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 
+#include <boost/shared_ptr.hpp>
+
 
 namespace py = pybind11;
 using namespace py::literals;
 
 
+PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
 // some helper functions
 namespace pybind11 {

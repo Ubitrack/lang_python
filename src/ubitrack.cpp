@@ -38,6 +38,7 @@
 #include "core_measurement.hpp"
 #include "core_util.hpp"
 #include "core_calibration.hpp"
+#include "core_serialization.hpp"
 
 PYBIND11_MODULE(ubitrack, m)
 {
@@ -54,5 +55,8 @@ PYBIND11_MODULE(ubitrack, m)
 
     auto m_core_calibration = m_core.def_submodule("calibration", "Calibration Functions");
     bind_utCalibration(m_core_calibration);
+
+    auto m_core_serialization = m_core.def_submodule("serialization", "Serialization Functions");
+    bind_utSerialization(m_core_serialization);
 
 }
