@@ -77,6 +77,8 @@ template< class EventType >
 class EventStreamReader {
 public:
 	EventStreamReader( std::istream & s) {
+		if ( !s.good() )
+			throw std::runtime_error( "Invalid input stream" );
 		parse(s);
 	}
 	EventStreamReader( const std::string& filename) {

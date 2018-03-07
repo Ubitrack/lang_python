@@ -40,6 +40,8 @@
 #include "core_calibration.hpp"
 #include "core_serialization.hpp"
 
+#include "vision_main.hpp"
+
 #include "dataflow_dataflow.hpp"
 #include "dataflow_graph.hpp"
 
@@ -76,8 +78,8 @@ PYBIND11_MODULE(ubitrack, m)
     bind_utDataflowGraph(m_dataflow_graph);
 
     // utvision wrapper
-    // auto m_vision = m.def_submodule("vision", "Vision Module");
-    // XXX
+    auto m_vision = m.def_submodule("vision", "Vision Module");
+    bind_utVisionMain(m_vision);
     
     // utfacade wrapper
     auto m_facade = m.def_submodule("facade", "Facade Module");

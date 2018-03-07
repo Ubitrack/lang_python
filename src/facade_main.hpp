@@ -251,8 +251,7 @@ void bind_utFacadeMain(py::module& m)
 	//expose_pushsink_for< Components::ApplicationPushSinkErrorPositionList, Ubitrack::Measurement::ErrorPositionList >(m, "ErrorPositionList");
 	//expose_pushsink_for< Components::ApplicationPushSinkErrorPositionList2, Ubitrack::Measurement::ErrorPositionList2 >(m, "ErrorPositionList2");
 
-	// enable later
-	// expose_pushsink_for< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement >, Ubitrack::Measurement::ImageMeasurement >(m, "VisionImage");
+	expose_pushsink_for< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement >, Ubitrack::Measurement::ImageMeasurement >(m, "VisionImage");
 
 	// push sources
 	expose_pushsource_for< Components::ApplicationPushSourceButton >(m, "Button");
@@ -271,7 +270,7 @@ void bind_utFacadeMain(py::module& m)
 	expose_pushsource_for< Components::ApplicationPushSourceErrorPositionList >(m, "ErrorPositionList");
 	expose_pushsource_for< Components::ApplicationPushSourceErrorPositionList2 >(m, "ErrorPositionList2");
 
-	//expose_pushsource_for< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >(m, "VisionImage");
+	expose_pushsource_for< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >(m, "VisionImage");
 
 
 	// pull sinks
@@ -311,7 +310,7 @@ void bind_utFacadeMain(py::module& m)
 	expose_pullsource_for< Components::ApplicationPullSourceErrorPositionList, Ubitrack::Measurement::ErrorPositionList >(m, "ErrorPositionList");
 	expose_pullsource_for< Components::ApplicationPullSourceErrorPositionList2, Ubitrack::Measurement::ErrorPositionList2 >(m, "ErrorPositionList2");
 
-	//expose_pullsource_for< Components::ApplicationPullSource< Ubitrack::Measurement::ImageMeasurement >, Ubitrack::Measurement::ImageMeasurement >(m, "VisionImage");
+	expose_pullsource_for< Components::ApplicationPullSource< Ubitrack::Measurement::ImageMeasurement >, Ubitrack::Measurement::ImageMeasurement >(m, "VisionImage");
 
 	py::class_< PyDataflowObserver, boost::shared_ptr< PyDataflowObserver >>(m, "DataflowObserver")
 		.def(py::init< py::object, py::object>());
@@ -346,7 +345,7 @@ void bind_utFacadeMain(py::module& m)
 		.def("getApplicationPushSinkErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList >)
 		.def("getApplicationPushSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList2 >)
 
-		// .def("getApplicationPushSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPushSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
 
 
 		// push sources
@@ -366,7 +365,7 @@ void bind_utFacadeMain(py::module& m)
 		.def("getApplicationPushSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList >)
 		.def("getApplicationPushSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList2 >)
 
-		//.def("getApplicationPushSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPushSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >)
 
 
 
@@ -388,7 +387,7 @@ void bind_utFacadeMain(py::module& m)
 		.def("getApplicationPullSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPositionList2 > >)
 
 
-		// .def("getApplicationPullSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPullSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ImageMeasurement > >)
 
 		// pull sources
 		.def("getApplicationPullSourceButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceButton >)
@@ -407,7 +406,7 @@ void bind_utFacadeMain(py::module& m)
 		.def("getApplicationPullSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList >)
 		.def("getApplicationPullSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList2 >)
 
-		//.def("getApplicationPullSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPullSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
 
 
 
@@ -428,7 +427,7 @@ void bind_utFacadeMain(py::module& m)
 //		.def("setCallbackErrorPositionList", &setWrappedCallbackFacade< Ubitrack::Measurement::ErrorPositionList >)
 //		.def("setCallbackErrorPositionList2", &setWrappedCallbackFacade< Ubitrack::Measurement::ErrorPositionList2 >)
 
-		// .def("setCallbackVisionImage", &setWrappedCallbackFacade< Ubitrack::Measurement::ImageMeasurement >)
+		.def("setCallbackVisionImage", &setWrappedCallbackFacade< Ubitrack::Measurement::ImageMeasurement >)
 
 		// pull source (not supported by AdvancedFacade ..)
 		// .def("setSourceCallbackButton", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::Button >)

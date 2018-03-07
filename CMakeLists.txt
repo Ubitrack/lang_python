@@ -101,28 +101,26 @@ MESSAGE(STATUS "Python Include: ${PYTHON_INCLUDE_DIR} Numpy: ${PYTHON_NUMPY_INCL
 MESSAGE(STATUS "Python Lib: ${PYTHON_LIBRARIES}")   
 MESSAGE(STATUS "Install Directory: ${CMAKE_INSTALL_PREFIX}")   
 
-if (PYTHON_EXECUTABLE)
-  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
-  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-  set(DEPS        "${CMAKE_CURRENT_SOURCE_DIR}/lib/ubitrack/__init__.py")
-  set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build")
+# if (PYTHON_EXECUTABLE)
+#   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+#   set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+#   set(DEPS        "${CMAKE_CURRENT_SOURCE_DIR}/lib/ubitrack/__init__.py")
+#   set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build")
 
-  configure_file(${SETUP_PY_IN} ${SETUP_PY})
+#   configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
-	add_custom_command(
-	  OUTPUT ${OUTPUT}/timestamp
-	  COMMAND ${PYTHON_EXECUTABLE} setup.py build
-	  COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/timestamp
-	  DEPENDS ${DEPS}
-	)
-	add_custom_target(pybuild ALL DEPENDS ${OUTPUT}/timestamp )
+# 	add_custom_command(
+# 	  OUTPUT ${OUTPUT}/timestamp
+# 	  COMMAND ${PYTHON_EXECUTABLE} setup.py build
+# 	  COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/timestamp
+# 	  DEPENDS ${DEPS}
+# 	)
+# 	add_custom_target(pybuild ALL DEPENDS ${OUTPUT}/timestamp )
 
-  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix=${CMAKE_INSTALL_PREFIX})")
-endif(PYTHON_EXECUTABLE)
+#   install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix=${CMAKE_INSTALL_PREFIX})")
+# endif(PYTHON_EXECUTABLE)
 
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
 
 add_subdirectory(src)
 
-enable_testing()
-add_test( nosetests "${CMAKE_COMMAND}" -P ${CMAKE_BINARY_DIR}/testrunner.cmake )

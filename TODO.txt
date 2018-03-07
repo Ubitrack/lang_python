@@ -1,6 +1,4 @@
 planned improvements:
-- explicit is better than implicit (on bindings level)
-  => expose Matrix/Vector types as classes and provide convenience functions to convert back and forth
 - find a way to iterate over a list of types to create wrappers - or generate them using xdress
 
 missing functionality:

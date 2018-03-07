@@ -12,6 +12,8 @@ import os
 def setup_facade():
     "set up test fixtures"
     util.initLogging("log4cpp.conf")
+    if not "UBITRACK_COMPONENTS_PATH" in os.environ:
+        print("Missing environment variable: UBITRACK_COMPONENTS_PATH - tests are likely to fail")
     # Assumes UBITRACK_COMPONENTS_PATH is set correctly .. we don't know where components are located ..
     return facade.AdvancedFacade() 
 
