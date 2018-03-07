@@ -25,6 +25,7 @@
 
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
+#include <utVision/TextureUpdate.h>
 #include <utUtil/Logging.h>
 
 namespace Ubitrack { namespace Python {
@@ -55,21 +56,10 @@ public:
 
 protected:
 
-	bool getImageFormat(const Vision::Image::ImageFormatProperties& fmtSrc,
-            Vision::Image::ImageFormatProperties& fmtDst,
-			bool use_gpu, int& umatConvertCode,
-			GLenum& glFormat, GLenum& glDatatype);
-
-
 	Measurement::ImageMeasurement m_image;
 	boost::mutex m_imageLock;
-
-	// variables for textured drawing
 	Measurement::Timestamp m_lastImageTimestamp;
-	bool m_bTextureInitialized;
-	GLuint m_texture;
-	unsigned m_pow2Width;
-	unsigned m_pow2Height;
+	Vision::TextureUpdate m_textureUpdate;
 
 };
 

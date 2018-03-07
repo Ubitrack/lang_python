@@ -65,6 +65,7 @@ void bind_utVisionMain(py::module& m)
 		;
 
 	py::class_<ImageType::ImageFormatProperties> (m, "ImageFormatProperties")
+		.def(py::init<>())
 		.def_readwrite("imageFormat", &ImageType::ImageFormatProperties::imageFormat)
 		.def_readwrite("depth", &ImageType::ImageFormatProperties::depth)
 		.def_readwrite("channels", &ImageType::ImageFormatProperties::channels)
@@ -76,13 +77,41 @@ void bind_utVisionMain(py::module& m)
 
 
 	py::class_<ImageType> image(m, "Image", py::buffer_protocol());
+
+    py::enum_<ImageType::ImageUploadState>(image, "ImageUploadState")
+	    .value("OnCPU", ImageType::OnCPU)
+	    .value("OnGPU", ImageType::OnGPU)
+	    .value("OnCPUGPU", ImageType::OnCPUGPU)
+	    ;
+
+    py::enum_<ImageType::PixelFormat>(image, "PixelFormat")
+	    .value("UNKNOWN_PIXELFORMAT", ImageType::UNKNOWN_PIXELFORMAT)
+	    .value("LUMINANCE", ImageType::LUMINANCE)
+	    .value("RGB", ImageType::RGB)
+	    .value("BGR", ImageType::BGR)
+	    .value("RGBA", ImageType::RGBA)
+	    .value("BGRA", ImageType::BGRA)
+	    .value("YUV422", ImageType::YUV422)
+	    .value("YUV411", ImageType::YUV411)
+	    .value("RAW", ImageType::RAW)
+	    .value("DEPTH", ImageType::DEPTH)
+	    ;
+
+    py::enum_<ImageType::ImageProperties>(image, "ImageProperties")
+	    .value("IMAGE_FORMAT", ImageType::IMAGE_FORMAT)
+	    .value("IMAGE_DEPTH", ImageType::IMAGE_DEPTH)
+	    .value("IMAGE_CHANNELS", ImageType::IMAGE_CHANNELS)
+	    .value("IMAGE_BITSPERPIXEL", ImageType::IMAGE_BITSPERPIXEL)
+	    .value("IMAGE_ORIGIN", ImageType::IMAGE_ORIGIN)
+	    ;
+
 	image
 		.def(py::init<int, int, ImageType::ImageFormatProperties&, ImageType::ImageUploadState>(),
 			py::arg("nWidth"), py::arg("nHeight"), py::arg("nFormat"), py::arg("nState") = ImageType::OnCPU)
         .def_buffer([](ImageType &m) -> py::buffer_info {
-        	std::string fmt_descriptor;
-        	std::size_t fmt_size;
-        	unsigned int fmt_channels;
+        	std::string fmt_descriptor = py::format_descriptor<unsigned char>::format();
+        	std::size_t fmt_size = sizeof(unsigned char);
+        	unsigned int fmt_channels = m.channels();
 
         	ImageType::ImageFormatProperties fmt;
         	m.getFormatProperties(fmt);
@@ -90,8 +119,6 @@ void bind_utVisionMain(py::module& m)
 		    // determine datatype
 		    switch(fmt.depth) {
 		    case CV_8U:
-		        fmt_descriptor = py::format_descriptor<unsigned char>::format();
-		        fmt_size = sizeof(unsigned char);
 		        break;
 		    case CV_16U:
 		        fmt_descriptor = py::format_descriptor<unsigned short>::format();
@@ -106,25 +133,8 @@ void bind_utVisionMain(py::module& m)
 		        fmt_size = sizeof(double);
 		        break;
 		    default:
-		    	throw pybind11::value_error("Unknown image depth");
+		    	break;
 		    }
-
-			// determine image properties
-			switch (fmt.imageFormat) {
-			case ImageType::LUMINANCE:
-			    fmt_channels = 1;
-			    break;
-			case ImageType::RGB:
-			case ImageType::BGR:
-			    fmt_channels = 3;
-			    break;
-			case ImageType::BGRA:
-			case ImageType::RGBA:
-			    fmt_channels = 4;
-			    break;
-			default:
-		    	throw pybind11::value_error("Unknown image format");
-			}
 
             if (fmt_channels == 1) {
                     return py::buffer_info(
@@ -156,32 +166,6 @@ void bind_utVisionMain(py::module& m)
 		;
 
 
-    py::enum_<ImageType::ImageUploadState>(image, "ImageUploadState")
-	    .value("OnCPU", ImageType::OnCPU)
-	    .value("OnGPU", ImageType::OnGPU)
-	    .value("OnCPUGPU", ImageType::OnCPUGPU)
-	    ;
-
-    py::enum_<ImageType::PixelFormat>(image, "PixelFormat")
-	    .value("UNKNOWN_PIXELFORMAT", ImageType::UNKNOWN_PIXELFORMAT)
-	    .value("LUMINANCE", ImageType::LUMINANCE)
-	    .value("RGB", ImageType::RGB)
-	    .value("BGR", ImageType::BGR)
-	    .value("RGBA", ImageType::RGBA)
-	    .value("BGRA", ImageType::BGRA)
-	    .value("YUV422", ImageType::YUV422)
-	    .value("YUV411", ImageType::YUV411)
-	    .value("RAW", ImageType::RAW)
-	    .value("DEPTH", ImageType::DEPTH)
-	    ;
-
-    py::enum_<ImageType::ImageProperties>(image, "ImageProperties")
-	    .value("IMAGE_FORMAT", ImageType::IMAGE_FORMAT)
-	    .value("IMAGE_DEPTH", ImageType::IMAGE_DEPTH)
-	    .value("IMAGE_CHANNELS", ImageType::IMAGE_CHANNELS)
-	    .value("IMAGE_BITSPERPIXEL", ImageType::IMAGE_BITSPERPIXEL)
-	    .value("IMAGE_ORIGIN", ImageType::IMAGE_ORIGIN)
-	    ;
 
 	py::class_<Ubitrack::Measurement::ImageMeasurement>(m, "ImageMeasurement")
 		.def(py::init<Ubitrack::Measurement::Timestamp>())
@@ -194,5 +178,9 @@ void bind_utVisionMain(py::module& m)
 		.def("get", &Ubitrack::Measurement::ImageMeasurement::get, py::return_value_policy::reference_internal)
 		;
 
+	m.def("makeImageMeasurement", [](Ubitrack::Measurement::Timestamp t, int nWidth, int nHeight, ImageType::ImageFormatProperties& nFormat){
+		boost::shared_ptr< ImageType > pImage( new ImageType( nWidth, nHeight, nFormat, ImageType::OnCPU) );
+		return Ubitrack::Measurement::ImageMeasurement( t, pImage );
+	});
 
 }

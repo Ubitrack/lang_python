@@ -9,6 +9,7 @@
 
 set(MODULE_SOURCES
 	ubitrack.cpp
+	BackgroundImage.cpp
 	)
 
 ADD_LIBRARY(ubitrack SHARED ${MODULE_SOURCES})
