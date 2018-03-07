@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 # make the name of debug libraries end in _d.
-SET_TARGET_PROPERTIES( ubitrack PROPERTIES DEBUG_POSTFIX "_d" )
+#SET_TARGET_PROPERTIES( ubitrack PROPERTIES DEBUG_POSTFIX "_d" )
 
 IF(UNIX) 
   SET_TARGET_PROPERTIES( ubitrack PROPERTIES OUTPUT_NAME ubitrack )

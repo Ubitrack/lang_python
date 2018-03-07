@@ -1,8 +1,6 @@
 
 __author__ = 'jack'
 
-from nose import with_setup
-
 from ubitrack.core import math as utmath
 from ubitrack.core import util
 from ubitrack.core import measurement
@@ -11,16 +9,14 @@ import numpy as np
 import time
 import os
 
-f = None
-
-def setup_func():
+def setup_facade():
     "set up test fixtures"
     util.initLogging("log4cpp.conf")
-    global f
-    f = facade.AdvancedFacade("/usr/local/lib/ubitrack")
+    # Assumes UBITRACK_COMPONENTS_PATH is set correctly .. we don't know where components are located ..
+    return facade.AdvancedFacade() 
 
 
-def teardown_func():
+def teardown_facade(f):
     "tear down test fixtures"
     if f is not None:
         f.clearDataflow()
@@ -29,6 +25,7 @@ def teardown_func():
 @with_setup(setup_func, teardown_func)
 def test_basic_facade_components():
 
+    f = setup_facade()
     thisdir = os.path.dirname(__file__)
     f.loadDataflow(os.path.join(thisdir, "single_pushsinkpose.dfg"), True)
     
@@ -51,11 +48,12 @@ def test_basic_facade_components():
     f.stopDataflow()
 
     assert len(results) > 0 
+    teardown_facade(f)
 
 
-@with_setup(setup_func, teardown_func)
 def test_pull_positionlist():
 
+    f = setup_facade()
     thisdir = os.path.dirname(__file__)
     f.loadDataflow(os.path.join(thisdir, "test_positionlist.dfg"), True)
     
@@ -74,12 +72,11 @@ def test_pull_positionlist():
     
     p0 = ps[0]
     assert p0[0] == 1 and p0[1] == 0 and p0[2] == 0
+    teardown_facade(f)
     
-pullsrc_ctr = 0 
-
-@with_setup(setup_func, teardown_func)
 def test_pullsource_pose():
-    global pullsrc_ctr
+
+    f = setup_facade()
     thisdir = os.path.dirname(__file__)
     f.loadDataflow(os.path.join(thisdir, "test_pull_source_pose.dfg"), True)
     
@@ -87,12 +84,9 @@ def test_pullsource_pose():
     if x is None:
         raise RuntimeError("Wrapping is not working properly !!!!")
 
-    pullsrc_ctr = 0
     def pull_cb(ts):
-        global pullsrc_ctr
         from ubitrack.core import math, measurement
         import numpy as np
-        pullsrc_ctr += 1
         p = math.Pose(math.Quaternion(), np.array([1,2,3]))
         return measurement.Pose(ts, p)
 
@@ -104,6 +98,6 @@ def test_pullsource_pose():
     
     f.stopDataflow()
     x.setCallback(None)
-    assert ctr > 0
+    teardown_facade(f)
 
 

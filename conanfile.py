@@ -25,6 +25,7 @@ class UbitrackCoreConan(ConanFile):
         "ubitrack_dataflow/%s@ubitrack/stable" % version,
         "ubitrack_hapticcalibration/%s@ubitrack/stable" % version,
         "ubitrack_facade/%s@ubitrack/stable" % version,
+        "ubitrack_component_core/%s@ubitrack/stable" % version, # for testing
        )
 
     # all sources are deployed with the package

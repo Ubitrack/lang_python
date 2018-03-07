@@ -40,9 +40,15 @@
 #include "core_calibration.hpp"
 #include "core_serialization.hpp"
 
+#include "dataflow_dataflow.hpp"
+#include "dataflow_graph.hpp"
+
+#include "facade_main.hpp"
+
 PYBIND11_MODULE(ubitrack, m)
 {
-    auto m_core = m.def_submodule("core", "Core Functionality");
+    // utcore wrapper
+    auto m_core = m.def_submodule("core", "Core Module");
 
     auto m_core_math = m_core.def_submodule("math", "Math Types");
     bind_utMath(m_core_math);
@@ -58,5 +64,23 @@ PYBIND11_MODULE(ubitrack, m)
 
     auto m_core_serialization = m_core.def_submodule("serialization", "Serialization Functions");
     bind_utSerialization(m_core_serialization);
+
+
+    // utdataflow wrapper
+    auto m_dataflow = m.def_submodule("dataflow", "Dataflow Module");
+
+    auto m_dataflow_dataflow = m_dataflow.def_submodule("dataflow", "Dataflow Functions");
+    bind_utDataflowMain(m_dataflow_dataflow);
+
+    auto m_dataflow_graph = m_dataflow.def_submodule("graph", "Graph Functions");
+    bind_utDataflowGraph(m_dataflow_graph);
+
+    // utvision wrapper
+    // auto m_vision = m.def_submodule("vision", "Vision Module");
+    // XXX
+    
+    // utfacade wrapper
+    auto m_facade = m.def_submodule("facade", "Facade Module");
+    bind_utFacadeMain(m_facade);
 
 }

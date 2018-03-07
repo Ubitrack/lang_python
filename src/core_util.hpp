@@ -182,6 +182,8 @@ protected:
 
 void bind_utUtil(py::module& m)
 {
+	py::register_exception<Ubitrack::Util::Exception>(m, "UbitrackException");
+
 	m.def("initLogging", &Ubitrack::Util::initLogging, py::arg("sConfigFile") = "log4cpp.conf");
 
     // EventStreamReaders
