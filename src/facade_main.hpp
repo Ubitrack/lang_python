@@ -76,6 +76,18 @@ private:
 };
 
 
+void addDataflowObserver( Ubitrack::Facade::AdvancedFacade* self, py::object py_observer )
+{
+	PyDataflowObserver* observer = py_observer.cast< PyDataflowObserver* >();
+	self->addDataflowObserver(observer);
+}
+
+void removeDataflowObserver( Ubitrack::Facade::AdvancedFacade* self, py::object py_observer )
+{
+	PyDataflowObserver* observer = py_observer.cast< PyDataflowObserver* >();
+	self->removeDataflowObserver(observer);
+}
+
 
 // decode a Python exception and traceback into a string
 std::string handle_pyerror()
@@ -131,18 +143,6 @@ void setWrappedCallbackFacade( Ubitrack::Facade::AdvancedFacade* self, const std
 {
 	self->setCallback(name, boost::function<void (const MT&)>(
 			measurement_callback_wrapper_sink_t< MT >( function ) ));
-}
-
-void addDataflowObserver( Ubitrack::Facade::AdvancedFacade* self, py::object py_observer )
-{
-	PyDataflowObserver* observer = py_observer.cast< PyDataflowObserver* >();
-	self->addDataflowObserver(observer);
-}
-
-void removeDataflowObserver( Ubitrack::Facade::AdvancedFacade* self, py::object py_observer )
-{
-	PyDataflowObserver* observer = py_observer.cast< PyDataflowObserver* >();
-	self->removeDataflowObserver(observer);
 }
 
 template< class MT >
