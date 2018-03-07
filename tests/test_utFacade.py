@@ -4,27 +4,28 @@ __author__ = 'jack'
 from ubitrack.core import math as utmath
 from ubitrack.core import util
 from ubitrack.core import measurement
-from ubitrack.facade import facade
+from ubitrack import facade
 import numpy as np
 import time
 import os
 
 def setup_facade():
-    "set up test fixtures"
+    print("set up AdvancedFacade")
     util.initLogging("log4cpp.conf")
     if not "UBITRACK_COMPONENTS_PATH" in os.environ:
         print("Missing environment variable: UBITRACK_COMPONENTS_PATH - tests are likely to fail")
-    # Assumes UBITRACK_COMPONENTS_PATH is set correctly .. we don't know where components are located ..
-    return facade.AdvancedFacade() 
+        return facade.AdvancedFacade() 
+    else:
+        return facade.AdvancedFacade(os.environ['UBITRACK_COMPONENTS_PATH']) 
 
 
 def teardown_facade(f):
-    "tear down test fixtures"
+    print("tear down AdvancedFacade")
     if f is not None:
         f.clearDataflow()
+    print("done")
 
 
-@with_setup(setup_func, teardown_func)
 def test_basic_facade_components():
 
     f = setup_facade()
@@ -50,56 +51,57 @@ def test_basic_facade_components():
     f.stopDataflow()
 
     assert len(results) > 0 
+
     teardown_facade(f)
 
 
-def test_pull_positionlist():
+# def test_pull_positionlist():
 
-    f = setup_facade()
-    thisdir = os.path.dirname(__file__)
-    f.loadDataflow(os.path.join(thisdir, "test_positionlist.dfg"), True)
+#     f = setup_facade()
+#     thisdir = os.path.dirname(__file__)
+#     f.loadDataflow(os.path.join(thisdir, "test_positionlist.dfg"), True)
     
-    x = f.getApplicationPullSinkPositionList("receiver")
-    if x is None:
-        raise RuntimeError("Wrapping is not working properly !!!!")
+#     x = f.getApplicationPullSinkPositionList("receiver")
+#     if x is None:
+#         raise RuntimeError("Wrapping is not working properly !!!!")
     
-    f.startDataflow()
+#     f.startDataflow()
     
-    mps = x.get(measurement.now())
+#     mps = x.get(measurement.now())
     
-    f.stopDataflow()
+#     f.stopDataflow()
 
-    ps = mps.get()
-    assert len(ps) == 3 
+#     ps = mps.get()
+#     assert len(ps) == 3 
     
-    p0 = ps[0]
-    assert p0[0] == 1 and p0[1] == 0 and p0[2] == 0
-    teardown_facade(f)
+#     p0 = ps[0]
+#     assert p0[0] == 1 and p0[1] == 0 and p0[2] == 0
+#     teardown_facade(f)
     
-def test_pullsource_pose():
+# def test_pullsource_pose():
 
-    f = setup_facade()
-    thisdir = os.path.dirname(__file__)
-    f.loadDataflow(os.path.join(thisdir, "test_pull_source_pose.dfg"), True)
+#     f = setup_facade()
+#     thisdir = os.path.dirname(__file__)
+#     f.loadDataflow(os.path.join(thisdir, "test_pull_source_pose.dfg"), True)
     
-    x = f.getApplicationPullSourcePose("pose")
-    if x is None:
-        raise RuntimeError("Wrapping is not working properly !!!!")
+#     x = f.getApplicationPullSourcePose("pose")
+#     if x is None:
+#         raise RuntimeError("Wrapping is not working properly !!!!")
 
-    def pull_cb(ts):
-        from ubitrack.core import math, measurement
-        import numpy as np
-        p = math.Pose(math.Quaternion(), np.array([1,2,3]))
-        return measurement.Pose(ts, p)
+#     def pull_cb(ts):
+#         from ubitrack.core import math, measurement
+#         import numpy as np
+#         p = math.Pose(math.Quaternion(), np.array([1,2,3]))
+#         return measurement.Pose(ts, p)
 
-    x.setCallback(pull_cb)
+#     x.setCallback(pull_cb)
     
-    f.startDataflow()
+#     f.startDataflow()
     
-    time.sleep(3)
+#     time.sleep(3)
     
-    f.stopDataflow()
-    x.setCallback(None)
-    teardown_facade(f)
+#     f.stopDataflow()
+#     x.setCallback(None)
+#     teardown_facade(f)
 
 
