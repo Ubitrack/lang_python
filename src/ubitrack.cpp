@@ -44,6 +44,8 @@
 
 #include "visualization_main.hpp"
 
+#include "hapticcalibration_main.hpp"
+
 #include "dataflow_dataflow.hpp"
 #include "dataflow_graph.hpp"
 
@@ -69,6 +71,18 @@ PYBIND11_MODULE(ubitrack, m)
     auto m_core_serialization = m_core.def_submodule("serialization", "Serialization Functions");
     bind_utSerialization(m_core_serialization);
 
+    // utvision wrapper
+    auto m_vision = m.def_submodule("vision", "Vision Module");
+    bind_utVisionMain(m_vision);
+    
+    // utvisualization wrapper
+    auto m_visualization = m.def_submodule("visualization", "Visualization Module");
+    bind_utVisualizationMain(m_visualization);
+
+    // hapticcalibration wrapper
+    auto m_haptics = m.def_submodule("haptics", "Haptic Calibration Module");
+    bind_utHapticCalibrationMain(m_haptics);
+
     // utdataflow wrapper
     auto m_dataflow = m.def_submodule("dataflow", "Dataflow Module");
 
@@ -77,14 +91,6 @@ PYBIND11_MODULE(ubitrack, m)
 
     auto m_dataflow_graph = m_dataflow.def_submodule("graph", "Graph Functions");
     bind_utDataflowGraph(m_dataflow_graph);
-
-    // utvision wrapper
-    auto m_vision = m.def_submodule("vision", "Vision Module");
-    bind_utVisionMain(m_vision);
-    
-    // utvisualization wrapper
-    auto m_visualization = m.def_submodule("visualization", "Visualization Module");
-    bind_utVisualizationMain(m_visualization);
 
     // utfacade wrapper
     auto m_facade = m.def_submodule("facade", "Facade Module");
