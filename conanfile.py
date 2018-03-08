@@ -52,16 +52,14 @@ class UbitrackCoreConan(ConanFile):
             cmake.definitions['CMAKE_FIND_FRAMEWORK'] = "LAST"
         cmake.configure()
         cmake.build()
-        cmake.install()
+        # cmake.install()
 
     def package(self):
-        self.copy('*.py*')
-        self.copy('*.so')
+        self.copy('ubitrack.so', dst='lib/python', src='lib')
+        self.copy('ubitrack.pyd', dst='lib/python', src='lib')
 
     def package_info(self):
-        self.env_info.PYTHONPATH.append(self.package_folder)
-
-
+        self.env_info.PYTHONPATH.append(os.path.join(self.package_folder, 'lib', 'python'))
 
     @property
     def python_exec(self):
