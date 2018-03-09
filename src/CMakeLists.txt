@@ -12,7 +12,21 @@ set(MODULE_SOURCES
 	BackgroundImage.cpp
 	)
 
-ADD_LIBRARY(ubitrack SHARED ${MODULE_SOURCES})
+set(MODULE_HEADERS
+		core_math.hpp
+		core_calibration.hpp
+		core_measurement.hpp
+		core_serialization.hpp
+		core_util.hpp
+		dataflow_dataflow.hpp
+		dataflow_graph.hpp
+        hapticcalibration_main.hpp
+		facade_main.hpp
+		vision_main.hpp
+		visualization_main.hpp
+		)
+
+ADD_LIBRARY(ubitrack SHARED ${MODULE_SOURCES} ${MODULE_HEADERS})
 
 set_property(TARGET ubitrack PROPERTY PREFIX "")
 

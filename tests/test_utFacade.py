@@ -9,9 +9,15 @@ import numpy as np
 import time
 import os
 
+logging_initialized = False
+
 def setup_facade():
     print("set up AdvancedFacade")
-    util.initLogging("log4cpp.conf")
+    global logging_initialized
+    if not logging_initialized:
+        util.initLogging("log4cpp.conf")
+        logging_initialized = True
+
     if not "UBITRACK_COMPONENTS_PATH" in os.environ:
         print("Missing environment variable: UBITRACK_COMPONENTS_PATH - tests are likely to fail")
         return facade.AdvancedFacade() 
@@ -23,6 +29,7 @@ def teardown_facade(f):
     print("tear down AdvancedFacade")
     if f is not None:
         f.clearDataflow()
+        f.killEverything()
     print("done")
 
 
@@ -46,6 +53,7 @@ def test_basic_facade_components_direct_callback():
 
     print("stop dataflow")
     f.stopDataflow()
+    f.setCallbackPose("receiver", None)
 
     print("assert results")
     assert len(results) > 0
@@ -53,6 +61,7 @@ def test_basic_facade_components_direct_callback():
     results.clear()
 
     teardown_facade(f)
+    f = None
 
 
 def test_basic_facade_components_pushsink_object():
@@ -67,8 +76,7 @@ def test_basic_facade_components_pushsink_object():
         results.append(m)
 
     x = f.getApplicationPushSinkPose("receiver")
-    if x is None:
-        raise RuntimeError("Wrapping is not working properly !!!!")
+    assert x is not None
 
     x.setCallback(cb)
 
@@ -90,7 +98,11 @@ def test_basic_facade_components_pushsink_object():
     print(results[0])
     results.clear()
 
+    time.sleep(0.3)
+
     teardown_facade(f)
+    f = None
+
 
 
 def test_pull_positionlist():
@@ -100,9 +112,8 @@ def test_pull_positionlist():
     f.loadDataflow(os.path.join(thisdir, "test_positionlist.dfg"), True)
     
     x = f.getApplicationPullSinkPositionList("receiver")
-    if x is None:
-        raise RuntimeError("Wrapping is not working properly !!!!")
-    
+    assert x is not None
+
     f.startDataflow()
     
     mps = x.get(measurement.now())
@@ -116,7 +127,11 @@ def test_pull_positionlist():
     
     p0 = ps[0]
     assert p0[0] == 1 and p0[1] == 0 and p0[2] == 0
+
+    time.sleep(0.3)
     teardown_facade(f)
+    f = None
+
 
 
 def test_pullsource_pose():
@@ -126,8 +141,7 @@ def test_pullsource_pose():
     f.loadDataflow(os.path.join(thisdir, "test_pull_source_pose.dfg"), True)
     
     x = f.getApplicationPullSourcePose("pose")
-    if x is None:
-        raise RuntimeError("Wrapping is not working properly !!!!")
+    assert x is not None
 
     def pull_cb(ts):
         from ubitrack.core import math, measurement
@@ -136,7 +150,6 @@ def test_pullsource_pose():
         return measurement.Pose(ts, p)
 
     x.setCallback(pull_cb)
-    
     f.startDataflow()
     
     time.sleep(3)
@@ -146,6 +159,8 @@ def test_pullsource_pose():
     # XXX need to deallocate pullsource otherwise we'll segfault on program exit
     x = None
 
+    time.sleep(0.3)
     teardown_facade(f)
+    f = None
 
 

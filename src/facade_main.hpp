@@ -134,15 +134,23 @@ struct measurement_callback_wrapper_sink_t
 template< class OT, class MT >
 void setWrappedCallback( OT* self,  py::object function )
 {
-	self->setCallback(boost::function<void (const MT&)>(
-			measurement_callback_wrapper_sink_t< MT >( function ) ));
+	if (!function.is_none()) {
+		self->setCallback(boost::function<void (const MT&)>(
+				measurement_callback_wrapper_sink_t< MT >( function ) ));
+	} else {
+		self->setCallback( boost::function<void (const MT&)>() );
+	}
 }
 
 template< class MT >
 void setWrappedCallbackFacade( Ubitrack::Facade::AdvancedFacade* self, const std::string& name, py::object function )
 {
-	self->setCallback(name, boost::function<void (const MT&)>(
-			measurement_callback_wrapper_sink_t< MT >( function ) ));
+	if (!function.is_none()) {
+		self->setCallback(name, boost::function<void (const MT&)>(
+				measurement_callback_wrapper_sink_t< MT >( function ) ));
+	} else {
+		self->setCallback(name, boost::function<void (const MT&)>() );
+	}
 }
 
 template< class MT >
@@ -176,8 +184,12 @@ struct measurement_callback_wrapper_source_t
 template< class OT, class MT >
 void setWrappedSourceCallback( OT* self,  py::object function )
 {
-	self->setCallback(boost::function< MT (const Ubitrack::Measurement::Timestamp)>(
-			measurement_callback_wrapper_source_t< MT >( function ) ));
+	if (!function.is_none()) {
+		self->setCallback(boost::function< MT (const Ubitrack::Measurement::Timestamp)>(
+				measurement_callback_wrapper_source_t< MT >( function ) ));
+	} else {
+		self->setCallback(boost::function< MT (const Ubitrack::Measurement::Timestamp)>());
+	}
 }
 
 // template< class MT >
@@ -245,6 +257,8 @@ void bind_utFacadeMain(py::module& m)
 	expose_pushsink_for< Components::ApplicationPushSinkMatrix4x4, Ubitrack::Measurement::Matrix4x4 >(m, "Matrix4x4");
 	expose_pushsink_for< Components::ApplicationPushSinkMatrix3x3, Ubitrack::Measurement::Matrix3x3 >(m, "Matrix3x3");
 	expose_pushsink_for< Components::ApplicationPushSinkMatrix3x4, Ubitrack::Measurement::Matrix3x4 >(m, "Matrix3x4");
+    // need to remove SimpleFacade first
+//    expose_pushsink_for< Components::ApplicationPushSinkCameraIntrinsics, Ubitrack::Measurement::CameraIntrinsics >(m, "CameraIntrinsics");
 
 	expose_pushsink_for< Components::ApplicationPushSinkPositionList, Ubitrack::Measurement::PositionList >(m, "PositionList");
 	expose_pushsink_for< Components::ApplicationPushSinkPositionList2, Ubitrack::Measurement::PositionList2 >(m, "PositionList2");
@@ -264,6 +278,8 @@ void bind_utFacadeMain(py::module& m)
 	expose_pushsource_for< Components::ApplicationPushSourceMatrix4x4 >(m, "Matrix4x4");
 	expose_pushsource_for< Components::ApplicationPushSourceMatrix3x3 >(m, "Matrix3x3");
 	expose_pushsource_for< Components::ApplicationPushSourceMatrix3x4 >(m, "Matrix3x4");
+    // need to remove SimpleFacade first
+//    expose_pushsource_for< Components::ApplicationPushSourceCameraIntrinsics, Ubitrack::Measurement::CameraIntrinsics >(m, "CameraIntrinsics");
 
 	expose_pushsource_for< Components::ApplicationPushSourcePositionList >(m, "PositionList");
 	expose_pushsource_for< Components::ApplicationPushSourcePositionList2 >(m, "Position2DList");
@@ -285,6 +301,8 @@ void bind_utFacadeMain(py::module& m)
 	expose_pullsink_for< Ubitrack::Measurement::Matrix4x4 >(m, "Matrix4x4");
 	expose_pullsink_for< Ubitrack::Measurement::Matrix3x3 >(m, "Matrix3x3");
 	expose_pullsink_for< Ubitrack::Measurement::Vector4D >(m, "Vector4D");
+    // need to remove SimpleFacade first
+//    expose_pullsink_for< Components::ApplicationPullSinkCameraIntrinsics, Ubitrack::Measurement::CameraIntrinsics >(m, "CameraIntrinsics");
 
 	expose_pullsink_for< Ubitrack::Measurement::PositionList >(m, "PositionList");
 	expose_pullsink_for< Ubitrack::Measurement::PositionList2 >(m, "PositionList2");
@@ -304,6 +322,8 @@ void bind_utFacadeMain(py::module& m)
 	expose_pullsource_for< Components::ApplicationPullSourceMatrix4x4, Ubitrack::Measurement::Matrix4x4 >(m, "Matrix4x4");
 	expose_pullsource_for< Components::ApplicationPullSourceMatrix3x3, Ubitrack::Measurement::Matrix3x3 >(m, "Matrix3x3");
 	expose_pullsource_for< Components::ApplicationPullSourceMatrix3x4, Ubitrack::Measurement::Matrix3x4 >(m, "Matrix3x4");
+    // need to remove SimpleFacade first
+//    expose_pullsource_for< Components::ApplicationPullSourceCameraIntrinsics, Ubitrack::Measurement::CameraIntrinsics >(m, "CameraIntrinsics");
 
 	expose_pullsource_for< Components::ApplicationPullSourcePositionList, Ubitrack::Measurement::PositionList >(m, "PositionList");
 	expose_pullsource_for< Components::ApplicationPullSourcePositionList2, Ubitrack::Measurement::PositionList2 >(m, "PositionList2");
@@ -323,90 +343,94 @@ void bind_utFacadeMain(py::module& m)
 		.def("loadDataflow", (void (Facade::AdvancedFacade::*)(std::istream&, bool))&Facade::AdvancedFacade::loadDataflow)
 		.def("clearDataflow", &Facade::AdvancedFacade::clearDataflow)
 		.def("startDataflow", &Facade::AdvancedFacade::startDataflow)
-		.def("stopDataflow", &Facade::AdvancedFacade::stopDataflow)
-		.def("killEverything", &Facade::AdvancedFacade::killEverything)
+		.def("stopDataflow", &Facade::AdvancedFacade::stopDataflow, py::call_guard<py::gil_scoped_release>()) // we need to release the GIL due to possible dead-lock here
+		.def("killEverything", &Facade::AdvancedFacade::killEverything, py::call_guard<py::gil_scoped_release>()) // we need to release the GIL due to possible dead-lock here
 
 		// all components .. need a better way do do this .. meta-meta programming needed - havent looking into boost::mpl yet ;)
 
 		// push sinks
-		.def("getApplicationPushSinkButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkButton >)
-		.def("getApplicationPushSinkDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkDistance >)
-		.def("getApplicationPushSinkPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPose >)
-		.def("getApplicationPushSinkErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPose >)
-		.def("getApplicationPushSinkPosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPosition >)
-		.def("getApplicationPushSinkPosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPosition2D >)
-		.def("getApplicationPushSinkRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkRotation >)
-		.def("getApplicationPushSinkMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix4x4 >)
-		.def("getApplicationPushSinkMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix3x3 >)
-		.def("getApplicationPushSinkMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix3x4 >)
+		.def("getApplicationPushSinkButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkButton >/* no return policy for now */)
+		.def("getApplicationPushSinkDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkDistance >/* no return policy for now */)
+		.def("getApplicationPushSinkPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPose >/* no return policy for now */)
+		.def("getApplicationPushSinkErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPose >/* no return policy for now */)
+		.def("getApplicationPushSinkPosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPosition >/* no return policy for now */)
+		.def("getApplicationPushSinkPosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPosition2D >/* no return policy for now */)
+		.def("getApplicationPushSinkRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkRotation >/* no return policy for now */)
+		.def("getApplicationPushSinkMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix4x4 >/* no return policy for now */)
+		.def("getApplicationPushSinkMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix3x3 >/* no return policy for now */)
+		.def("getApplicationPushSinkMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkMatrix3x4 >/* no return policy for now */)
+        //CameraIntrinsics
 
-		.def("getApplicationPushSinkPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPositionList >)
-		.def("getApplicationPushSinkPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPositionList2 >)
-		.def("getApplicationPushSinkErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList >)
-		.def("getApplicationPushSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList2 >)
+		.def("getApplicationPushSinkPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPositionList >/* no return policy for now */)
+		.def("getApplicationPushSinkPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkPositionList2 >/* no return policy for now */)
+		.def("getApplicationPushSinkErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList >/* no return policy for now */)
+		.def("getApplicationPushSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSinkErrorPositionList2 >/* no return policy for now */)
 
-		.def("getApplicationPushSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPushSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >/* no return policy for now */)
 
 
 		// push sources
-		.def("getApplicationPushSourceButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceButton >)
-		.def("getApplicationPushSourceDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceDistance >)
-		.def("getApplicationPushSourcePose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePose >)
-		.def("getApplicationPushSourceErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPose >)
-		.def("getApplicationPushSourcePosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePosition >)
-		.def("getApplicationPushSourcePosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePosition2D >)
-		.def("getApplicationPushSourceRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceRotation >)
-		.def("getApplicationPushSourceMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix4x4 >)
-		.def("getApplicationPushSourceMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix3x4 >)
-		.def("getApplicationPushSourceMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix3x3 >)
+		.def("getApplicationPushSourceButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceButton >/* no return policy for now */)
+		.def("getApplicationPushSourceDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceDistance >/* no return policy for now */)
+		.def("getApplicationPushSourcePose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePose >/* no return policy for now */)
+		.def("getApplicationPushSourceErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPose >/* no return policy for now */)
+		.def("getApplicationPushSourcePosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePosition >/* no return policy for now */)
+		.def("getApplicationPushSourcePosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePosition2D >/* no return policy for now */)
+		.def("getApplicationPushSourceRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceRotation >/* no return policy for now */)
+		.def("getApplicationPushSourceMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix4x4 >/* no return policy for now */)
+		.def("getApplicationPushSourceMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix3x4 >/* no return policy for now */)
+		.def("getApplicationPushSourceMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceMatrix3x3 >/* no return policy for now */)
+        //CameraIntrinsics
 
-		.def("getApplicationPushSourcePositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePositionList >)
-		.def("getApplicationPushSourcePosition2DList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePositionList2 >)
-		.def("getApplicationPushSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList >)
-		.def("getApplicationPushSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList2 >)
+		.def("getApplicationPushSourcePositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePositionList >/* no return policy for now */)
+		.def("getApplicationPushSourcePosition2DList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourcePositionList2 >/* no return policy for now */)
+		.def("getApplicationPushSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList >/* no return policy for now */)
+		.def("getApplicationPushSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSourceErrorPositionList2 >/* no return policy for now */)
 
-		.def("getApplicationPushSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPushSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSource< Ubitrack::Measurement::ImageMeasurement > >/* no return policy for now */)
 
 
 
 		// pull sinks
-		.def("getApplicationPullSinkButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Button > >)
-		.def("getApplicationPullSinkDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Distance > >)
-		.def("getApplicationPullSinkPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Pose > >)
-		.def("getApplicationPullSinkErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPose > >)
-		.def("getApplicationPullSinkPosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Position > >)
-		.def("getApplicationPullSinkPosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Position2D > >)
-		.def("getApplicationPullSinkRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Rotation > >)
-		.def("getApplicationPullSinkMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Matrix4x4 > >)
-		.def("getApplicationPullSinkMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Matrix3x3 > >)
-		.def("getApplicationPullSinkVector4D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Vector4D > >)
+		.def("getApplicationPullSinkButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Button > >/* no return policy for now */)
+		.def("getApplicationPullSinkDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Distance > >/* no return policy for now */)
+		.def("getApplicationPullSinkPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Pose > >/* no return policy for now */)
+		.def("getApplicationPullSinkErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPose > >/* no return policy for now */)
+		.def("getApplicationPullSinkPosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Position > >/* no return policy for now */)
+		.def("getApplicationPullSinkPosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Position2D > >/* no return policy for now */)
+		.def("getApplicationPullSinkRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Rotation > >/* no return policy for now */)
+		.def("getApplicationPullSinkMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Matrix4x4 > >/* no return policy for now */)
+		.def("getApplicationPullSinkMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Matrix3x3 > >/* no return policy for now */)
+		.def("getApplicationPullSinkVector4D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::Vector4D > >/* no return policy for now */)
+        //CameraIntrinsics
 
-		.def("getApplicationPullSinkPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::PositionList > >)
-		.def("getApplicationPullSinkPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::PositionList2 > >)
-		.def("getApplicationPullSinkErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPositionList > >)
-		.def("getApplicationPullSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPositionList2 > >)
+		.def("getApplicationPullSinkPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::PositionList > >/* no return policy for now */)
+		.def("getApplicationPullSinkPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::PositionList2 > >/* no return policy for now */)
+		.def("getApplicationPullSinkErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPositionList > >/* no return policy for now */)
+		.def("getApplicationPullSinkErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ErrorPositionList2 > >/* no return policy for now */)
 
 
-		.def("getApplicationPullSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPullSinkVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSink< Ubitrack::Measurement::ImageMeasurement > >/* no return policy for now */)
 
 		// pull sources
-		.def("getApplicationPullSourceButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceButton >)
-		.def("getApplicationPullSourceDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceDistance >)
-		.def("getApplicationPullSourcePose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePose >)
-		.def("getApplicationPullSourceErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPose >)
-		.def("getApplicationPullSourcePosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePosition >)
-		.def("getApplicationPullSourcePosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePosition2D >)
-		.def("getApplicationPullSourceRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceRotation >)
-		.def("getApplicationPullSourceMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix4x4 >)
-		.def("getApplicationPullSourceMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix3x3 >)
-		.def("getApplicationPullSourceMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix3x4 >)
+		.def("getApplicationPullSourceButton", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceButton >/* no return policy for now */)
+		.def("getApplicationPullSourceDistance", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceDistance >/* no return policy for now */)
+		.def("getApplicationPullSourcePose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePose >/* no return policy for now */)
+		.def("getApplicationPullSourceErrorPose", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPose >/* no return policy for now */)
+		.def("getApplicationPullSourcePosition", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePosition >/* no return policy for now */)
+		.def("getApplicationPullSourcePosition2D", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePosition2D >/* no return policy for now */)
+		.def("getApplicationPullSourceRotation", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceRotation >/* no return policy for now */)
+		.def("getApplicationPullSourceMatrix4x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix4x4 >/* no return policy for now */)
+		.def("getApplicationPullSourceMatrix3x3", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix3x3 >/* no return policy for now */)
+		.def("getApplicationPullSourceMatrix3x4", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceMatrix3x4 >/* no return policy for now */)
+        //CameraIntrinsics
 
-		.def("getApplicationPullSourcePositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePositionList >)
-		.def("getApplicationPullSourcePositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePositionList2 >)
-		.def("getApplicationPullSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList >)
-		.def("getApplicationPullSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList2 >)
+		.def("getApplicationPullSourcePositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePositionList >/* no return policy for now */)
+		.def("getApplicationPullSourcePositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourcePositionList2 >/* no return policy for now */)
+		.def("getApplicationPullSourceErrorPositionList", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList >/* no return policy for now */)
+		.def("getApplicationPullSourceErrorPositionList2", &Facade::AdvancedFacade::componentByName< Components::ApplicationPullSourceErrorPositionList2 >/* no return policy for now */)
 
-		.def("getApplicationPullSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >)
+		.def("getApplicationPullSourceVisionImage", &Facade::AdvancedFacade::componentByName< Components::ApplicationPushSink< Ubitrack::Measurement::ImageMeasurement > >/* no return policy for now */)
 
 
 
@@ -421,6 +445,7 @@ void bind_utFacadeMain(py::module& m)
 		.def("setCallbackRotation", &setWrappedCallbackFacade< Ubitrack::Measurement::Rotation >)
 		.def("setCallbackMatrix3x3", &setWrappedCallbackFacade< Ubitrack::Measurement::Matrix4x4 >)
 		.def("setCallbackMatrix4x4", &setWrappedCallbackFacade< Ubitrack::Measurement::Matrix3x3 >)
+        //CameraIntrinsics
 
 		.def("setCallbackPositionList", &setWrappedCallbackFacade< Ubitrack::Measurement::PositionList >)
 		.def("setCallbackPositionList2", &setWrappedCallbackFacade< Ubitrack::Measurement::PositionList2 >)
@@ -438,6 +463,7 @@ void bind_utFacadeMain(py::module& m)
 		// .def("setSourceCallbackRotation", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::Rotation >)
 		// .def("setSourceCallbackMatrix3x3", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::Matrix4x4 >)
 		// .def("setSourceCallbackMatrix4x4", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::Matrix3x3 >)
+        //CameraIntrinsics
 		//
 		// .def("setSourceCallbackPositionList", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::PositionList >)
 		// .def("setSourceCallbackPositionList2", &setWrappedSourceCallbackFacade< Ubitrack::Measurement::PositionList2 >)
