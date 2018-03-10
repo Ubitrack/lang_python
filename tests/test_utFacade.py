@@ -34,6 +34,7 @@ def teardown_facade(f):
 
 
 def test_basic_facade_components_direct_callback():
+    print("test_basic_facade_components_direct_callback")
 
     f = setup_facade()
     thisdir = os.path.dirname(__file__)
@@ -43,7 +44,8 @@ def test_basic_facade_components_direct_callback():
 
     def cb(m):
         results.append(m)
-    
+
+    print("set callback pose")
     f.setCallbackPose("receiver", cb)
     print("start dataflow")
     f.startDataflow()
@@ -65,6 +67,7 @@ def test_basic_facade_components_direct_callback():
 
 
 def test_basic_facade_components_pushsink_object():
+    print("test_basic_facade_components_pushsink_object")
 
     f = setup_facade()
     thisdir = os.path.dirname(__file__)
@@ -75,9 +78,11 @@ def test_basic_facade_components_pushsink_object():
     def cb(m):
         results.append(m)
 
+    print("get pushsink")
     x = f.getApplicationPushSinkPose("receiver")
     assert x is not None
 
+    print("set callback pose")
     x.setCallback(cb)
 
     print("start dataflow")
@@ -106,6 +111,7 @@ def test_basic_facade_components_pushsink_object():
 
 
 def test_pull_positionlist():
+    print("test_pull_positionlist")
 
     f = setup_facade()
     thisdir = os.path.dirname(__file__)
@@ -135,7 +141,7 @@ def test_pull_positionlist():
 
 
 def test_pullsource_pose():
-
+    print("test_pullsource_pose")
     f = setup_facade()
     thisdir = os.path.dirname(__file__)
     f.loadDataflow(os.path.join(thisdir, "test_pull_source_pose.dfg"), True)

@@ -18,3 +18,5 @@ Installation:
 
 TBD
 
+Requirements:
+- on Windows this will require the VS2015 runtime (https://www.microsoft.com/en-us/download/details.aspx?id=48145)
