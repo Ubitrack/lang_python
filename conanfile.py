@@ -42,12 +42,8 @@ class UbitrackCoreConan(ConanFile):
         cmake = CMake(self)
         cmake.verbose = True
         self.output.info("python executable: %s (%s)" % (self.python_exec.replace("\\", "/"), self.python_version))
-        self.output.info("Python include: %s - library: %s" % (self.python_include, self.python_lib))
-        self.output.info("Numpy include: %s" % self.numpy_include)
         cmake.definitions['PYTHON_EXECUTABLE'] = self.python_exec.replace("\\", "/")
         cmake.definitions['PYTHON_VERSION_STRING'] = self.python_version
-        cmake.definitions['PYTHON_INCLUDE_DIR'] = self.python_include
-        cmake.definitions['PYTHON_NUMPY_INCLUDE_DIR'] = self.numpy_include
         if self.settings.os == "Macos":
             cmake.definitions['CMAKE_FIND_FRAMEWORK'] = "LAST"
         cmake.configure()
@@ -78,28 +74,6 @@ class UbitrackCoreConan(ConanFile):
         self._python_version = self._python_version or self.run_python_command(cmd)
         return self._python_version
       
-    @property
-    def python_include(self):
-        pyinclude = self.get_python_path("include")
-        if not os.path.exists(os.path.join(pyinclude, 'pyconfig.h')):
-            return ""
-        else:
-            return pyinclude.replace('\\', '/')
-    
-    @property
-    def python_lib(self):
-        stdlib_dir = os.path.dirname(self.get_python_path("stdlib")).replace('\\', '/')
-        return stdlib_dir
-        
-    @property
-    def numpy_include(self):
-        cmd = "import os; os.environ['DISTUTILS_USE_SDK']='1'; import numpy.distutils; print(numpy.distutils.misc_util.get_numpy_include_dirs()[0])" 
-        return self.run_python_command(cmd)
-                  
-    def get_python_path(self, dir_name):
-        cmd = "import sysconfig; print(sysconfig.get_path('{0}'))".format(dir_name)
-        return self.run_python_command(cmd)   
-
     def run_python_command(self, cmd):
         pyexec = self.python_exec
         if pyexec:
