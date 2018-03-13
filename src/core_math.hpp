@@ -120,7 +120,7 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
 
     vec_cls
         .def(py::init<>())
-        .def("__init__", [](py::buffer b) {
+        .def(py::init([](py::buffer b) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -136,7 +136,7 @@ void bind_vector(py::module &m, const std::string &type_name, const std::string 
                 throw std::runtime_error("Incompatible array size!");
 
             return new VecType(static_cast<T *>(info.ptr));
-        })
+        }))
         .def_buffer([](VecType &v) -> py::buffer_info {
             return py::buffer_info(
                 v.content(),                                /* Pointer to buffer */
@@ -250,7 +250,7 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
 
     py::class_<MatType, boost::shared_ptr<MatType>>(m, type_name.c_str(), doc_txt.c_str(), py::buffer_protocol())
         .def(py::init<>())
-        .def("__init__", [](py::buffer b) {
+        .def(py::init([](py::buffer b) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -266,7 +266,7 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
                 throw std::runtime_error("Incompatible array size!");
 
             return new MatType(static_cast<T *>(info.ptr));
-        })
+        }))
         .def_buffer([](MatType &m) -> py::buffer_info {
             return py::buffer_info(
                 m.content(),                                /* Pointer to buffer */
@@ -350,12 +350,12 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
     cls
         .def(py::init<>())
         // boost quaternion constructors
-        .def("__init__", [](QuatType &q, std::complex<double>& c1, std::complex<double>& c2) {
-            new (&q) QuatType(boost::math::quaternion<double>(c1, c2));
-        })
+        .def(py::init([](std::complex<double>& c1, std::complex<double>& c2) {
+            return new QuatType(boost::math::quaternion<double>(c1, c2));
+        }))
         // ubitrack quaternion constructors
         .def(py::init<const Ubitrack::Math::Vector< double, 3 >&, const double>())
-        .def("__init__", [](py::buffer b, double angle) {
+        .def(py::init([](py::buffer b, double angle) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -372,9 +372,9 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
             Ubitrack::Math::Vector<double, 3> v(static_cast<double *>(info.ptr));
             return new QuatType(v, angle);
-        })
+        }))
         .def(py::init<const Ubitrack::Math::Matrix< double, 3, 3 >&>())
-        .def("__init__", [](py::buffer b) {
+        .def(py::init([](py::buffer b) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -391,7 +391,7 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
             Ubitrack::Math::Matrix<double, 3, 3> m(static_cast<double *>(info.ptr));
             return new QuatType(m);
-        })
+        }))
         .def(py::init<const boost::math::quaternion<double>& >())
         .def(py::init<double, double, double>())
         .def(py::init<double, double, double, double>())
@@ -517,7 +517,7 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
                 throw std::runtime_error("Incompatible array size!");
             
             Ubitrack::Math::Vector<double, 4> v(static_cast<double *>(info.ptr));
-            return QuatType(v( 0 ), v( 1 ), v( 2 ), v( 3 ));
+            return new QuatType(v( 0 ), v( 1 ), v( 2 ), v( 3 ));
         })
 
         .def("__repr__", [type_name](QuatType &q) -> std::string {
@@ -718,7 +718,7 @@ void bind_utMath(py::module& m)
     py::class_<Ubitrack::Math::Pose, boost::shared_ptr<Ubitrack::Math::Pose> > pose_cls(m, "Pose", "Math::Pose");
     pose_cls
         .def(py::init<const Ubitrack::Math::Quaternion&, const Ubitrack::Math::Vector< double, 3 >&>())
-        .def("__init__", [](const Ubitrack::Math::Quaternion& q, py::buffer b) {
+        .def(py::init([](const Ubitrack::Math::Quaternion& q, py::buffer b) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -735,9 +735,9 @@ void bind_utMath(py::module& m)
 
             Ubitrack::Math::Vector<double, 3> v(static_cast<double *>(info.ptr));
             return new Ubitrack::Math::Pose(q, v);
-        })
+        }))
         .def(py::init<const Ubitrack::Math::Matrix< double, 4, 4 >&>())
-        .def("__init__", [](py::buffer b) {
+        .def(py::init([](py::buffer b) {
 
             /* Request a buffer descriptor from Python */
             py::buffer_info info = b.request();
@@ -754,7 +754,7 @@ void bind_utMath(py::module& m)
 
             Ubitrack::Math::Matrix<double, 4, 4> m(static_cast<double *>(info.ptr));
             return new Ubitrack::Math::Pose(m);
-        })
+        }))
         .def("rotation", &Ubitrack::Math::Pose::rotation, py::return_value_policy::reference_internal)
         .def("translation", &Ubitrack::Math::Pose::translation, py::return_value_policy::reference_internal)
         .def("scalePose", &Ubitrack::Math::Pose::scalePose)
