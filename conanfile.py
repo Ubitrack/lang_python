@@ -55,8 +55,8 @@ class UbitrackCoreConan(ConanFile):
         # cmake.install()
 
     def package(self):
-        self.copy('ubitrack.so', dst='lib/python', src='lib')
-        self.copy('ubitrack.pyd', dst='lib/python', src='lib')
+        self.copy('ubitrack*.so', dst='lib/python', src='lib')
+        self.copy('ubitrack*.pyd', dst='lib/python', src='lib')
 
     def package_info(self):
         self.env_info.PYTHONPATH.append(os.path.join(self.package_folder, 'lib', 'python'))
