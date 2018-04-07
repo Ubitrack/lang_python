@@ -8,17 +8,6 @@
 #ifndef BACKGROUNDIMAGE_H_
 #define BACKGROUNDIMAGE_H_
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#ifdef _WIN32
-  #include <windows.h>
-#endif
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
-
 #include <boost/thread.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -27,6 +16,14 @@
 #include <utVision/Image.h>
 #include <utVision/TextureUpdate.h>
 #include <utUtil/Logging.h>
+
+
+#ifdef __APPLE__
+#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif
+
 
 namespace Ubitrack { namespace Python {
 
