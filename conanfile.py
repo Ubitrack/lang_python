@@ -5,6 +5,7 @@ import os, sys
 import sysconfig
 from io import StringIO
 
+
 class UbitrackCoreConan(ConanFile):
     name = "ubitrack_lang_python"
     version = "1.3.0"
@@ -37,48 +38,20 @@ class UbitrackCoreConan(ConanFile):
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
         self.copy(pattern="*.dylib*", dst="lib", src="lib") 
+        self.copy(pattern="*.so*", dst="lib", src="lib") 
        
     def build(self):
         cmake = CMake(self)
         cmake.verbose = True
-        self.output.info("python executable: %s (%s)" % (self.python_exec.replace("\\", "/"), self.python_version))
-        cmake.definitions['PYTHON_EXECUTABLE'] = self.python_exec.replace("\\", "/")
-        cmake.definitions['PYTHON_VERSION_STRING'] = self.python_version
+        self.output.info("python executable: %s (%s)" % (self.deps_user_info["python_dev_config"].python_exec,
+                                                         self.deps_user_info["python_dev_config"].python_version))
+        cmake.definitions['PYTHON_EXECUTABLE'] = self.deps_user_info["python_dev_config"].python_exec
+        cmake.definitions['PYTHON_VERSION_STRING'] = self.deps_user_info["python_dev_config"].python_version
         if self.settings.os == "Macos":
             cmake.definitions['CMAKE_FIND_FRAMEWORK'] = "LAST"
         cmake.configure()
         cmake.build()
-        # cmake.install()
-
-    def package(self):
-        self.copy('ubitrack*.so', dst='lib/python', src='lib')
-        self.copy('ubitrack*.pyd', dst='lib/python', src='lib')
+        cmake.install()
 
     def package_info(self):
         self.env_info.PYTHONPATH.append(os.path.join(self.package_folder, 'lib', 'python'))
-
-    @property
-    def python_exec(self):
-        try:
-            pyexec = str(self.options.python)
-            output = StringIO()
-            self.run('{0} -c "import sys; print(sys.executable)"'.format(pyexec), output=output)
-            return '"'+output.getvalue().strip().replace("\\","/")+'"'
-        except:
-            return ""
-    
-    _python_version = ""
-    @property
-    def python_version(self):
-        cmd = "from sys import *; print('%d.%d' % (version_info[0],version_info[1]))"
-        self._python_version = self._python_version or self.run_python_command(cmd)
-        return self._python_version
-      
-    def run_python_command(self, cmd):
-        pyexec = self.python_exec
-        if pyexec:
-            output = StringIO()
-            self.run('{0} -c "{1}"'.format(pyexec, cmd), output=output)
-            return output.getvalue().strip()
-        else:
-            return ""
