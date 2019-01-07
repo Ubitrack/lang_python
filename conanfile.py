@@ -34,6 +34,7 @@ class UbitrackCoreConan(ConanFile):
 
     def configure(self):
         self.options['Boost'].without_python = True
+        self.options['python_dev_config'].python = self.options.python
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
