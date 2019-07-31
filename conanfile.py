@@ -13,24 +13,31 @@ class UbitrackCoreConan(ConanFile):
     description = "Ubitrack Facade Modern Python Bindings"
     url = "https://github.com/Ubitrack/lang_python.git"
     license = "GPL"
-    options = {"python": "ANY",}
-    default_options = ("python=python",)
+    options = { "python": "ANY",
+                "workspaceBuild" : [True, False],}
+    default_options = { "python":"python", 
+                        "workspaceBuild" : False,}
 
     short_paths = True
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
-    requires = (
-        "pybind11/[>=2.2.1]@camposs/stable", # only until we manage to upgrade to boost versions >= 1.63.0
-        "ubitrack_core/%s@ubitrack/stable" % version,
-        "ubitrack_vision/%s@ubitrack/stable" % version,
-        "ubitrack_dataflow/%s@ubitrack/stable" % version,
-        "ubitrack_hapticcalibration/%s@ubitrack/stable" % version,
-        "ubitrack_facade/%s@ubitrack/stable" % version,
-        "ubitrack_component_core/%s@ubitrack/stable" % version, # for testing
-       )
 
     # all sources are deployed with the package
     exports_sources = "cmake/*", "include/*", "doc/*", "lib/*", "src/*", "tests/*", "CMakeLists.txt", "setup.py.in"
+
+    def requirements(self):
+        userChannel = "ubitrack/stable"
+        if self.options.workspaceBuild:
+            userChannel = "local/dev"
+
+        self.requires("ubitrack_core/%s@%s" % (self.version, userChannel))
+        self.requires("ubitrack_dataflow/%s@%s" % (self.version, userChannel))
+        self.requires("ubitrack_vision/%s@%s" % (self.version, userChannel))
+
+        self.requires("ubitrack_hapticcalibration/%s@%s" % (self.version, userChannel))
+        self.requires("ubitrack_facade/%s@%s" % (self.version, userChannel))
+        self.requires("ubitrack_component_core/%s@%s" % (self.version, userChannel))
+        self.requires("pybind11/[>=2.2.1]@camposs/stable")
 
     def configure(self):
         self.options['Boost'].without_python = True
