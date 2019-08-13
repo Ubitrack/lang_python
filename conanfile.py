@@ -37,7 +37,7 @@ class UbitrackCoreConan(ConanFile):
         self.requires("ubitrack_hapticcalibration/%s@%s" % (self.version, userChannel))
         self.requires("ubitrack_facade/%s@%s" % (self.version, userChannel))
         self.requires("ubitrack_component_core/%s@%s" % (self.version, userChannel))
-        self.requires("pybind11/[>=2.2.1]@camposs/stable")
+        self.requires("pybind11/[>=2.3.0]@camposs/stable")
 
     def configure(self):
         self.options['Boost'].without_python = True
