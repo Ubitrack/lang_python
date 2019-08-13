@@ -343,6 +343,7 @@ void bind_matrix(py::module &m, const std::string &type_name, const std::string 
 void bind_quaternion(py::module &m, const std::string &type_name, const std::string &doc_txt)
 {
     typedef Ubitrack::Math::Quaternion QuatType;
+    py::implicitly_convertible<boost::math::quaternion<double>, QuatType>();
 
 
     py::class_<QuatType, boost::shared_ptr<QuatType>> cls(m, type_name.c_str(), doc_txt.c_str());
@@ -469,7 +470,10 @@ void bind_quaternion(py::module &m, const std::string &type_name, const std::str
 
         .def(py::self != double())
         .def(py::self != std::complex<double>())
-        .def(py::self != py::self)
+        // .def(py::self != py::self)
+        .def("__neq__", [](const QuatType &a, const QuatType &b) {
+                return boost::math::quaternion<double>(a) != boost::math::quaternion<double>(b);
+            }, py::is_operator())
 
         .def(py::self * Ubitrack::Math::Vector< double, 3 >())
 

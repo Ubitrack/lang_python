@@ -486,7 +486,7 @@ namespace pybind11 { namespace detail {
         std::unique_ptr<istream> value;
 
     public:
-        static PYBIND11_DESCR name() { return type_descr(_("istream")); }
+        static constexpr auto name = _("istream");
         static handle cast(const std::istream *src, return_value_policy policy, handle parent) {
             return none().release();
         }
@@ -513,7 +513,7 @@ namespace pybind11 { namespace detail {
         std::unique_ptr<ostream> value;
 
     public:
-        static PYBIND11_DESCR name() { return type_descr(_("ostream")); }
+        static constexpr auto name = _("ostream");
         static handle cast(const std::ostream *src, return_value_policy policy, handle parent) {
             return none().release();
         }
