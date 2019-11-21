@@ -57,6 +57,7 @@ class UbitrackCoreConan(ConanFile):
         cmake.definitions['PYTHON_VERSION_STRING'] = self.deps_user_info["python_dev_config"].python_version
         if self.settings.os == "Macos":
             cmake.definitions['CMAKE_FIND_FRAMEWORK'] = "LAST"
+        cmake.definitions['WITH_OPENCL'] = self.options['ubitrack_vision'].with_opencl
         cmake.configure()
         cmake.build()
         cmake.install()
